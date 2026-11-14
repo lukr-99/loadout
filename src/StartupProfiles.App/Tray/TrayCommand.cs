@@ -11,5 +11,6 @@ public enum TrayCommand
     CheckForUpdates,
     InstallUpdate,
     OpenDataFolder,
+    OpenAbout,
     Exit,
 }

@@ -64,6 +64,8 @@ public partial class ConfigWindow : Window
         e.Handled = true;
     }
 
+    private void OnOpenAbout(object sender, RoutedEventArgs e) => new About.AboutWindow { Owner = this }.Show();
+
     private void OnThemeChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_ready) _applyTheme((ThemeMode)ThemeBox.SelectedIndex);

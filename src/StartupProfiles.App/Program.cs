@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using StartupProfiles.App.About;
 using StartupProfiles.App.Api;
 using StartupProfiles.App.Config;
 using StartupProfiles.App.Discovery;
@@ -143,8 +144,24 @@ internal static class Program
             launcher.Show();
         }
 
+        // One About window at a time; opening it again brings the open one forward.
+        AboutWindow? about = null;
+        void OpenAbout()
+        {
+            if (about is not null)
+            {
+                if (about.WindowState == WindowState.Minimized) about.WindowState = WindowState.Normal;
+                about.Activate();
+                return;
+            }
+
+            about = new AboutWindow();
+            about.Closed += (_, _) => about = null;
+            about.Show();
+        }
+
         tray = new TrayIcon(profiles, history, executor, updates, () => ThemeManager.Parse(config.GetValue("theme")),
-            ApplyTheme, OpenConfig, OpenLauncher, app.Shutdown);
+            ApplyTheme, OpenConfig, OpenLauncher, OpenAbout, app.Shutdown);
 
         // Show the login selector at startup; the app then lives in the tray. Launching the app again while
         // it runs shows the launcher.
