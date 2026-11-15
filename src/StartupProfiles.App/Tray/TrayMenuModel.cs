@@ -56,6 +56,7 @@ public static class TrayMenuModel
             : new(checkingForUpdates ? "Checking for updates..." : "Check for updates", TrayCommand.CheckForUpdates,
                 IsEnabled: !checkingForUpdates));
         menu.Add(new("Open data folder", TrayCommand.OpenDataFolder));
+        menu.Add(new("About...", TrayCommand.OpenAbout));
         menu.Add(new($"Version {version}"));
         menu.Add(TrayMenuEntry.Separator);
         menu.Add(new("Exit", TrayCommand.Exit));

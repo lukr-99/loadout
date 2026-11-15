@@ -30,6 +30,7 @@ public sealed class TrayIcon : IDisposable
     private readonly Action<ThemeMode> _setTheme;
     private readonly Action _openConfig;
     private readonly Action _openLauncher;
+    private readonly Action _openAbout;
     private readonly Action _quit;
 
     public TrayIcon(
@@ -41,6 +42,7 @@ public sealed class TrayIcon : IDisposable
         Action<ThemeMode> setTheme,
         Action openConfig,
         Action openLauncher,
+        Action openAbout,
         Action quit)
     {
         _profiles = profiles;
@@ -51,6 +53,7 @@ public sealed class TrayIcon : IDisposable
         _setTheme = setTheme;
         _openConfig = openConfig;
         _openLauncher = openLauncher;
+        _openAbout = openAbout;
         _quit = quit;
 
         _host = new TrayIconHost("Startup Profiles", leftClick: openLauncher);
@@ -101,6 +104,7 @@ public sealed class TrayIcon : IDisposable
             case TrayCommand.CheckForUpdates: _ = CheckForUpdatesAsync(); break;
             case TrayCommand.InstallUpdate: _ = _updates.InstallAsync(); break;
             case TrayCommand.OpenDataFolder: OpenDataFolder(); break;
+            case TrayCommand.OpenAbout: _openAbout(); break;
             case TrayCommand.Exit: _quit(); break;
         }
 

@@ -638,6 +638,17 @@
             </Border>
           </StackPanel>
 
+          <TextBlock Text="About" Style="{StaticResource App.SettingGroup}" />
+          <Border Style="{StaticResource App.SettingCard}">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Content="About..." Click="OnOpenAbout" Padding="12,6" VerticalAlignment="Center" />
+              <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                <TextBlock Text="Who made this" Style="{StaticResource App.SettingTitle}" />
+                <TextBlock Text="Credits, licence, and where to send feedback." Style="{StaticResource App.SettingHint}" />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+
           <TextBlock Text="Your data" Style="{StaticResource App.SettingGroup}" />
           <Border Style="{StaticResource App.SettingCard}">
             <DockPanel>

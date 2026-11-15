@@ -5,6 +5,8 @@ release is a Git tag `vX.Y.Z` that matches it.
 
 ## [Unreleased]
 
+- New About window (tray menu, and Settings in the configuration window): who made the app, a feedback
+  invitation with Instagram, GitHub and Issues links, the app's facts, and credits.
 - A profile run that throws no longer leaves the launcher stuck or the configuration window on
   "Running...". The launcher stays open and shows the error, the configuration window shows
   "Run failed", the tray shows a balloon, and each failure is written to error.log.
