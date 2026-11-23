@@ -672,7 +672,7 @@ public sealed class ConfigViewModel : ObservableObject
     private void Export()
     {
         if (_backup is null) return;
-        var path = _prompts.PickSavePath($"startup-profiles-backup-{DateTime.Now:yyyy-MM-dd}.json");
+        var path = _prompts.PickSavePath($"loadout-backup-{DateTime.Now:yyyy-MM-dd}.json");
         if (path is null) return;
 
         _saves.Flush();
