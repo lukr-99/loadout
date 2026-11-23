@@ -102,9 +102,9 @@ public sealed class BackupService
             var document = parsed.RootElement.Deserialize<BackupDocument>(JsonFile.Options)
                 ?? throw new BackupException("The file is empty.");
             if (!string.Equals(document.Format, BackupDocument.FormatName, StringComparison.Ordinal))
-                throw new BackupException("This is not a Startup Profiles backup.");
+                throw new BackupException("This is not a Loadout backup.");
             if (document.Version > BackupDocument.CurrentVersion)
-                throw new BackupException($"This backup was made by a newer version of Startup Profiles ({document.AppVersion}). Update the app first.");
+                throw new BackupException($"This backup was made by a newer version of Loadout ({document.AppVersion}). Update the app first.");
             return (document, false);
         }
         catch (JsonException ex)

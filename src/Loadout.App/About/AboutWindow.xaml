@@ -1,7 +1,7 @@
 <Window x:Class="Loadout.App.About.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="About Startup Profiles" Width="520" Height="760" MinWidth="460" MinHeight="520"
+        Title="About Loadout" Width="520" Height="760" MinWidth="460" MinHeight="520"
         Icon="pack://application:,,,/Loadout;component/Assets/app.ico"
         WindowStartupLocation="CenterScreen" FontFamily="Segoe UI"
         Background="{DynamicResource App.Background}"

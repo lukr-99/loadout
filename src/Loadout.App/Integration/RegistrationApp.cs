@@ -7,7 +7,7 @@ using Loadout.Core.Storage;
 namespace Loadout.App.Integration;
 
 /// <summary>
-/// The one-shot registration host: parses a <c>register</c> invocation, shows Startup Profiles' own
+/// The one-shot registration host: parses a <c>register</c> invocation, shows Loadout's own
 /// trusted confirmation window, applies the user's choice, and exits. It never starts the loopback API,
 /// takes the tray, or contends for the single-instance mutex - it is a short-lived dialog process. When a
 /// full instance is already running, the write is routed through it (see <see cref="RunningInstance"/>).
@@ -57,5 +57,5 @@ internal static class RegistrationApp
     }
 
     private static void ShowError(string message) =>
-        MessageBox.Show(message, "Startup Profiles", MessageBoxButton.OK, MessageBoxImage.Warning);
+        MessageBox.Show(message, "Loadout", MessageBoxButton.OK, MessageBoxImage.Warning);
 }

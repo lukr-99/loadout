@@ -6,7 +6,7 @@ namespace Loadout.App.About;
 /// </summary>
 public static class AboutInfo
 {
-    public const string AppName = "Startup Profiles";
+    public const string AppName = "Loadout";
 
     public const string Tagline = "Start what fits what you are about to do.";
 

@@ -6,7 +6,7 @@ using Loadout.Core.Integration;
 namespace Loadout.App.Integration;
 
 /// <summary>
-/// A reachable, already-running Startup Profiles host discovered via endpoint.json. Registration routes
+/// A reachable, already-running Loadout host discovered via endpoint.json. Registration routes
 /// through it so the running app (which caches profiles in memory) stays the single writer of profiles.json.
 /// </summary>
 public sealed class RunningInstance

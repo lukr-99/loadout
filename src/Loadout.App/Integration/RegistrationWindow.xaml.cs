@@ -3,7 +3,7 @@ using Loadout.App.Themes;
 
 namespace Loadout.App.Integration;
 
-/// <summary>Startup Profiles' own trusted confirmation window for an external app's registration request.</summary>
+/// <summary>Loadout's own trusted confirmation window for an external app's registration request.</summary>
 public partial class RegistrationWindow : Window
 {
     public RegistrationWindow(RegistrationViewModel viewModel)

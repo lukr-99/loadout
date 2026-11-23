@@ -68,7 +68,7 @@ public sealed class BackupFlowTests : IDisposable
 
         viewModel.ImportCommand.Execute(null);
 
-        Assert.Contains(prompts.Infos, m => m.Contains("not a Startup Profiles backup", StringComparison.Ordinal));
+        Assert.Contains(prompts.Infos, m => m.Contains("not a Loadout backup", StringComparison.Ordinal));
         Assert.NotNull(_services.Profiles.Find("work"));
     }
 }

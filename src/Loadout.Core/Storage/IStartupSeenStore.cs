@@ -1,7 +1,7 @@
 namespace Loadout.Core.Storage;
 
 /// <summary>
-/// Persistence for the Windows startup entries Startup Profiles has already looked at (startup-seen.json), so a
+/// Persistence for the Windows startup entries Loadout has already looked at (startup-seen.json), so a
 /// new one can be told apart from one the user already decided about.
 /// </summary>
 public interface IStartupSeenStore

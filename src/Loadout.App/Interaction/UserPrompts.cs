@@ -23,7 +23,7 @@ public sealed class UserPrompts : IUserPrompts
         var cancel = SecondaryButton("Cancel", isCancel: true);
         panel.Children.Add(ButtonRow(ok, cancel));
 
-        var dialog = CreateDialog("Startup Profiles", panel);
+        var dialog = CreateDialog("Loadout", panel);
         ok.Click += (_, _) => dialog.DialogResult = true;
         return dialog.ShowDialog() == true;
     }
@@ -36,7 +36,7 @@ public sealed class UserPrompts : IUserPrompts
         var ok = PrimaryButton("OK");
         panel.Children.Add(ButtonRow(ok));
 
-        var dialog = CreateDialog("Startup Profiles", panel);
+        var dialog = CreateDialog("Loadout", panel);
         ok.Click += (_, _) => dialog.DialogResult = true;
         dialog.ShowDialog();
     }

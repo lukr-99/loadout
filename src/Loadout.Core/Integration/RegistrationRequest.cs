@@ -2,8 +2,8 @@ namespace Loadout.Core.Integration;
 
 /// <summary>
 /// A request from an external application to be added to a startup profile (see docs/INTEGRATION.md).
-/// This is the metadata half of the contract only: the requesting app supplies it, but Startup Profiles
-/// owns the decision - the user always chooses the target profile(s) in a Startup Profiles-owned window.
+/// This is the metadata half of the contract only: the requesting app supplies it, but Loadout
+/// owns the decision - the user always chooses the target profile(s) in a Loadout-owned window.
 /// A <see cref="SuggestedProfile"/> is a hint, never authority.
 /// </summary>
 public sealed record RegistrationRequest

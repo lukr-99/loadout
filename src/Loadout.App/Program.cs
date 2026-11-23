@@ -235,7 +235,7 @@ internal static class Program
             {
                 await updates.CheckAsync();
                 if (updates.AvailableVersion is { } version)
-                    tray?.Notify("Startup Profiles", $"Version {version} is available. Install it from the tray menu or Settings.");
+                    tray?.Notify("Loadout", $"Version {version} is available. Install it from the tray menu or Settings.");
             });
 
         instance.Listen(() => app.Dispatcher.BeginInvoke(OpenLauncher));

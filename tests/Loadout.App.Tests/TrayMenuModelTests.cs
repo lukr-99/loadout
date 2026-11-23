@@ -84,8 +84,8 @@ public sealed class TrayMenuModelTests
     }
 
     [Theory]
-    [InlineData(null, null, "Startup Profiles")]
-    [InlineData("Work", null, "Startup Profiles · Work")]
+    [InlineData(null, null, "Loadout")]
+    [InlineData("Work", null, "Loadout · Work")]
     public void TheToolTip_NamesTheActiveProfile(string? active, string? update, string expected)
     {
         Assert.Equal(expected, TrayMenuModel.ToolTip(active, update));

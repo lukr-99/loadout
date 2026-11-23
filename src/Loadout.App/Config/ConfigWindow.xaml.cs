@@ -35,7 +35,7 @@ public partial class ConfigWindow : Window
         _applyTheme = applyTheme;
         ThemeBox.SelectedIndex = (int)current;
         var version = typeof(ConfigWindow).Assembly.GetName().Version;
-        VersionText.Text = version is null ? "Startup Profiles" : $"Startup Profiles {version.Major}.{version.Minor}.{version.Build}";
+        VersionText.Text = version is null ? "Loadout" : $"Loadout {version.Major}.{version.Minor}.{version.Build}";
 
         // The side panel hides what Base already starts while a profile is being edited.
         var startupApps = CollectionViewSource.GetDefaultView(viewModel.StartupApps);

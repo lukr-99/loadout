@@ -116,7 +116,7 @@ public sealed class ConfigViewModel : ObservableObject
     /// <summary>Sidebar rows: the base first (<see cref="ProfileListItem.IsBase"/>), then every profile.</summary>
     public ObservableCollection<ProfileListItem> Profiles { get; } = [];
 
-    /// <summary>The apps Windows has registered to start at login (on or off), except Startup Profiles itself.</summary>
+    /// <summary>The apps Windows has registered to start at login (on or off), except Loadout itself.</summary>
     public ObservableCollection<StartupAppItem> StartupApps { get; } = [];
 
     /// <summary>The global library (the side panel's Created tab).</summary>
@@ -663,7 +663,7 @@ public sealed class ConfigViewModel : ObservableObject
     {
         if (Updates is not { AvailableVersion: { } version } updates) return;
         _saves.Flush();
-        if (!_prompts.Confirm($"Install version {version}? Startup Profiles closes, updates, and opens again. Your profiles and settings stay as they are."))
+        if (!_prompts.Confirm($"Install version {version}? Loadout closes, updates, and opens again. Your profiles and settings stay as they are."))
             return;
         _ = updates.InstallAsync();
     }

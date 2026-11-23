@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=integration:RegistrationViewModel, IsDesignTimeCreatable=False}"
         xmlns:ui="clr-namespace:Loadout.App.Ui"
-        Title="Add to Startup Profiles" Height="720" Width="500"
+        Title="Add to Loadout" Height="720" Width="500"
         MinHeight="460" MinWidth="420"
         WindowStartupLocation="CenterScreen" ResizeMode="CanResize" FontFamily="Segoe UI"
         Icon="pack://application:,,,/Loadout;component/Assets/app.ico"

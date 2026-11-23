@@ -56,7 +56,7 @@ public sealed class TrayIcon : IDisposable
         _openAbout = openAbout;
         _quit = quit;
 
-        _host = new TrayIconHost("Startup Profiles", leftClick: openLauncher);
+        _host = new TrayIconHost("Loadout", leftClick: openLauncher);
         if (LoadIcon() is { } icon) _host.SetIcon(icon);
         _updates.PropertyChanged += OnUpdatesChanged;
         Refresh();
@@ -115,7 +115,7 @@ public sealed class TrayIcon : IDisposable
     private async Task RunAsync(string profileId)
     {
         if (_profiles.Find(profileId) is not { } profile) return;
-        _host.Notify("Startup Profiles", $"Starting {profile.Name}.");
+        _host.Notify("Loadout", $"Starting {profile.Name}.");
         try
         {
             await Task.Run(() => _executor.RunAndRecordAsync(profile)).ConfigureAwait(true);
@@ -124,7 +124,7 @@ public sealed class TrayIcon : IDisposable
         {
             // Started fire-and-forget from the menu, so nothing above would see the exception.
             CrashLog.Write("Tray run", ex);
-            _host.Notify("Startup Profiles", $"Could not start {profile.Name}: {ex.Message}");
+            _host.Notify("Loadout", $"Could not start {profile.Name}: {ex.Message}");
         }
 
         Refresh();
@@ -133,7 +133,7 @@ public sealed class TrayIcon : IDisposable
     private async Task CheckForUpdatesAsync()
     {
         await _updates.CheckAsync().ConfigureAwait(true);
-        if (_updates.Status is { } status) _host.Notify("Startup Profiles", status);
+        if (_updates.Status is { } status) _host.Notify("Loadout", status);
     }
 
     private void OnUpdatesChanged(object? sender, PropertyChangedEventArgs e)

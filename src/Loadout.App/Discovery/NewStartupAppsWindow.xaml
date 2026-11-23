@@ -79,7 +79,7 @@
       <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
                   Visibility="{Binding IsDone, Converter={StaticResource BoolToVis}, ConverterParameter=invert}">
         <Button Content="Ask me later" Command="{Binding LaterCommand}" Padding="14,7" Margin="0,0,10,0"
-                ToolTip="Decide next time Startup Profiles starts" />
+                ToolTip="Decide next time Loadout starts" />
         <Button Content="Apply" Command="{Binding ApplyCommand}" Style="{StaticResource App.AccentButton}" IsDefault="True" />
       </StackPanel>
       <Button DockPanel.Dock="Right" Content="Close" Command="{Binding LaterCommand}" Padding="14,7"

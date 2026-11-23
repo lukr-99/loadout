@@ -3,7 +3,7 @@ using Loadout.Core.Startup;
 namespace Loadout.Core.Storage;
 
 /// <summary>
-/// Persistence for the startup entries Startup Profiles switched off (startup-takeover.json), so uninstall
+/// Persistence for the startup entries Loadout switched off (startup-takeover.json), so uninstall
 /// can switch exactly those back on.
 /// </summary>
 public interface IStartupTakeoverStore

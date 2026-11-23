@@ -6,7 +6,7 @@ using Loadout.Core.Windows;
 namespace Loadout.Core.Startup;
 
 /// <summary>
-/// Makes Startup Profiles the one app that starts at login. <see cref="TakeOver"/> copies every enabled
+/// Makes Loadout the one app that starts at login. <see cref="TakeOver"/> copies every enabled
 /// startup app the user can switch off into the Everything profile, then switches it off in Windows
 /// (reversibly, like Task Manager) and records it; <see cref="Restore"/> switches the recorded entries back on.
 /// </summary>
@@ -17,7 +17,7 @@ public sealed class StartupTakeover
     private readonly IStartupTakeoverStore _record;
     private readonly string _ownRunValueName;
 
-    /// <param name="ownRunValueName">Startup Profiles' own <c>Run</c> value, which is never taken over.</param>
+    /// <param name="ownRunValueName">Loadout's own <c>Run</c> value, which is never taken over.</param>
     public StartupTakeover(
         IStartupAppCatalog catalog,
         IProfileStore profiles,
@@ -53,7 +53,7 @@ public sealed class StartupTakeover
         return new StartupTakeoverResult(adopted, leftEnabled, failed);
     }
 
-    /// <summary>True when Startup Profiles has switched startup apps off before (at install or since).</summary>
+    /// <summary>True when Loadout has switched startup apps off before (at install or since).</summary>
     public bool HasTakenOver => _record.Load().Count > 0;
 
     /// <summary>

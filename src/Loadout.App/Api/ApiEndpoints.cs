@@ -122,7 +122,7 @@ public static class ApiEndpoints
         api.MapGet("/history", (int? take, IHistoryStore history) =>
             Results.Ok(history.GetRecent(take ?? 50)));
 
-        // Integration registration (see docs/INTEGRATION.md). Startup Profiles owns the decision, so an
+        // Integration registration (see docs/INTEGRATION.md). Loadout owns the decision, so an
         // agent cannot add an app silently: the first call previews the change and issues a single-use
         // token; the app is only added when that token is resubmitted (same two-phase rule as delete).
         api.MapPost("/register", (RegisterRequestBody? body, string? confirmToken, IProfileRegistrar registrar, ConfirmationService confirm) =>

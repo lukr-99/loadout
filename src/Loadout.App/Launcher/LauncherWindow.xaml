@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=launcher:LauncherViewModel, IsDesignTimeCreatable=False}"
         xmlns:ui="clr-namespace:Loadout.App.Ui"
-        Title="Startup Profiles" SizeToContent="WidthAndHeight" ResizeMode="CanMinimize"
+        Title="Loadout" SizeToContent="WidthAndHeight" ResizeMode="CanMinimize"
         MinWidth="360"
         Icon="pack://application:,,,/Loadout;component/Assets/app.ico"
         WindowStartupLocation="Manual" FontFamily="Segoe UI"
@@ -132,7 +132,7 @@
     <DockPanel Grid.Row="3" Margin="6,14,6,0" HorizontalAlignment="Center"
                Width="{Binding FooterWidth, RelativeSource={RelativeSource AncestorType=Window}}">
       <Button DockPanel.Dock="Right" Content="Not now" Command="{Binding CloseCommand}" Padding="14,6"
-              ToolTip="Close; Startup Profiles stays in the tray" />
+              ToolTip="Close; Loadout stays in the tray" />
       <Button DockPanel.Dock="Left" Command="{Binding EditCommand}" Padding="12,6">
         <StackPanel Orientation="Horizontal">
           <TextBlock Text="&#xE70F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12"

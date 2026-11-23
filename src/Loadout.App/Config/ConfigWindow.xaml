@@ -7,7 +7,7 @@
         d:DataContext="{d:DesignInstance Type=config:ConfigViewModel, IsDesignTimeCreatable=False}"
         xmlns:config="clr-namespace:Loadout.App.Config"
         xmlns:ui="clr-namespace:Loadout.App.Ui"
-        Title="Startup Profiles - Configuration" Height="720" Width="1240"
+        Title="Loadout - Configuration" Height="720" Width="1240"
         MinHeight="560" MinWidth="1060"
         Icon="pack://application:,,,/Loadout;component/Assets/app.ico"
         WindowStartupLocation="CenterScreen" FontFamily="Segoe UI"
@@ -593,7 +593,7 @@
           <Border Style="{StaticResource App.SettingCard}">
             <DockPanel>
               <CheckBox DockPanel.Dock="Right" IsChecked="{Binding DiscoverStartupApps}" VerticalAlignment="Center"
-                        ToolTip="Check for new startup apps when Startup Profiles starts" />
+                        ToolTip="Check for new startup apps when Loadout starts" />
               <StackPanel VerticalAlignment="Center">
                 <TextBlock Text="Ask about new startup apps" Style="{StaticResource App.SettingTitle}" />
                 <TextBlock Text="When an app adds itself to Windows startup, choose its profile." Style="{StaticResource App.SettingHint}" />

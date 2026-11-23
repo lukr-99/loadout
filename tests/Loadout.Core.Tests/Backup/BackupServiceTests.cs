@@ -116,7 +116,7 @@ public sealed class BackupServiceTests : IDisposable
 
     [Theory]
     [InlineData("not json", "not valid JSON")]
-    [InlineData("""{ "Format": "something-else", "Version": 1 }""", "not a Startup Profiles backup")]
+    [InlineData("""{ "Format": "something-else", "Version": 1 }""", "not a Loadout backup")]
     [InlineData("""{ "Format": "startup-profiles-backup", "Version": 99, "AppVersion": "9.0.0" }""", "newer version")]
     [InlineData("""{ "Format": "startup-profiles-backup", "Version": 1, "Profiles": [ { "Id": "a", "Name": "A" }, { "Id": "A", "Name": "B" } ] }""", "share an id")]
     [InlineData("""{ "Format": "startup-profiles-backup", "Version": 1, "Profiles": [ { "Id": "", "Name": "A" } ] }""", "no id or name")]

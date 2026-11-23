@@ -6,7 +6,7 @@ using Loadout.Core.Windows;
 namespace Loadout.Core.Startup;
 
 /// <summary>
-/// Finds apps that set themselves to start with Windows since Startup Profiles last looked, and places each where
+/// Finds apps that set themselves to start with Windows since Loadout last looked, and places each where
 /// the user chose. The first look only records what is there (install already handled those apps), so later looks
 /// report just the new ones. Every entry is offered once: it is marked seen whatever the user decides.
 /// </summary>
@@ -20,7 +20,7 @@ public sealed class StartupDiscovery
     private readonly LibraryService _library;
     private readonly string _ownRunValueName;
 
-    /// <param name="ownRunValueName">Startup Profiles' own <c>Run</c> value, which is never offered.</param>
+    /// <param name="ownRunValueName">Loadout's own <c>Run</c> value, which is never offered.</param>
     public StartupDiscovery(
         IStartupAppCatalog catalog,
         IStartupSeenStore seen,

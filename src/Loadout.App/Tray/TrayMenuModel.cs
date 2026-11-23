@@ -65,7 +65,7 @@ public static class TrayMenuModel
 
     /// <summary>The tooltip: the app name, the active profile, and a waiting update.</summary>
     public static string ToolTip(string? activeProfileName, string? availableUpdate) =>
-        "Startup Profiles" +
+        "Loadout" +
         (activeProfileName is null ? "" : $" · {activeProfileName}") +
         (availableUpdate is null ? "" : $"{Environment.NewLine}Update {availableUpdate} available");
 }

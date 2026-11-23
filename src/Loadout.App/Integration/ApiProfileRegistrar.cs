@@ -8,11 +8,11 @@ using Loadout.Core.Integration;
 namespace Loadout.App.Integration;
 
 /// <summary>
-/// An <see cref="IProfileRegistrar"/> that applies through a running Startup Profiles instance's loopback
+/// An <see cref="IProfileRegistrar"/> that applies through a running Loadout instance's loopback
 /// API rather than writing profiles.json directly. This matters because the running app caches the
 /// profile list in memory: a second process writing the file would be overwritten on the app's next save.
 /// Routing the write through the owner keeps a single writer. Runs the two-phase confirm on the caller's
-/// behalf (this transport is Startup Profiles talking to itself, not an untrusted external app).
+/// behalf (this transport is Loadout talking to itself, not an untrusted external app).
 /// </summary>
 public sealed class ApiProfileRegistrar : IProfileRegistrar
 {
@@ -46,11 +46,11 @@ public sealed class ApiProfileRegistrar : IProfileRegistrar
         }
         catch (HttpRequestException ex)
         {
-            throw new RegistrationException("Could not reach the running Startup Profiles instance.", ex);
+            throw new RegistrationException("Could not reach the running Loadout instance.", ex);
         }
         catch (TaskCanceledException ex)
         {
-            throw new RegistrationException("The running Startup Profiles instance did not respond in time.", ex);
+            throw new RegistrationException("The running Loadout instance did not respond in time.", ex);
         }
     }
 
