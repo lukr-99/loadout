@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>Windows Startup Profiles</h1>
+  <h1>Loadout</h1>
   <p>Stop launching <em>everything</em> at login. Launch what fits what you're about to do.</p>
 </div>
 
@@ -8,7 +8,13 @@ But most startup apps are *contextually* useful, not universally useful - a VPN 
 belong to work mornings, Steam and Discord belong to game nights, an IDE and a terminal
 belong to a dev session.
 
-**Windows Startup Profiles** adds the missing middle layer: **start when relevant.**
+**Loadout** adds the missing middle layer: **start when relevant.**
+
+> Loadout was called **Startup Profiles** until November 2026. Installing it over an older copy upgrades
+> it in place, and on the first start your profiles, library and settings are copied from
+> `%APPDATA%\StartupProfiles` to `%APPDATA%\Loadout`. The old folder is kept. Old `startupprofiles://`
+> links and agents that read the old `endpoint.json` keep working for now. See the
+> [changelog](CHANGELOG.md). The GitHub repository is still `lukr-99/startup-profiles`.
 
 Only this launcher runs at login. Right after you sign in it shows a small, fast, modern
 selector:
@@ -25,7 +31,7 @@ to that profile - as a small declarative startup workflow, not just a list of `.
 
 > Status: **working**. The portable Core, the Windows adapters, the App host (loopback API + tray), the
 > WPF launcher and config UIs, and the integration contract (protocol / CLI / API + confirmation window)
-> are implemented and tested. A per-user installer (`StartupProfiles-Setup-<version>.exe`) installs it and
+> are implemented and tested. A per-user installer (`Loadout-Setup-<version>.exe`) installs it and
 > the app updates itself from GitHub Releases. Still to come: profile conditions and sync between
 > machines. See [ARCHITECTURE.md](ARCHITECTURE.md) for the current implementation status.
 
@@ -66,10 +72,10 @@ icon, and a loopback API. Profiles persist as JSON under `%APPDATA%`, and a Clau
 bundled.
 
 ```
-StartupProfiles.slnx
-  src/StartupProfiles.Core     (net10.0)          profiles, actions, execution engine, storage
-  src/StartupProfiles.Windows  (net10.0-windows)  Windows adapters (startup, service, VPN)
-  src/StartupProfiles.App      (net10.0-windows)  WPF launcher + config UI, tray, loopback API
+Loadout.slnx
+  src/Loadout.Core     (net10.0)          profiles, actions, execution engine, storage
+  src/Loadout.Windows  (net10.0-windows)  Windows adapters (startup, service, VPN)
+  src/Loadout.App      (net10.0-windows)  WPF launcher + config UI, tray, loopback API
 ```
 
 | Layer | Responsibility |
@@ -77,7 +83,7 @@ StartupProfiles.slnx
 | **Core / Models** | `Profile`, `ProfileAction`, action types, conditions |
 | **Core / Actions** | One handler per action type |
 | **Core / Execution** | Ordered execution engine: delays, wait-for, failure behavior, logging |
-| **Core / Storage** | Profile + config persistence (JSON under `%APPDATA%\StartupProfiles`) |
+| **Core / Storage** | Profile + config persistence (JSON under `%APPDATA%\Loadout`) |
 | **Core / Windows** | Startup registration, process handling, services, elevation |
 | **Core / Integration** | Public registration contract for other apps (see below) |
 | **App / Launcher** | The minimal login selector |
@@ -90,11 +96,11 @@ Full write-up: [ARCHITECTURE.md](ARCHITECTURE.md).
 Other applications can *ask* to be added to a profile - they never add themselves. The
 requesting app supplies metadata (id, name, launch target, icon, suggested profile); Startup
 Profiles owns the confirmation UI and all configuration authority. Transport is a Windows
-custom protocol (`startupprofiles://register?...`) and/or a CLI (`StartupProfiles.exe register ...`).
+custom protocol (`loadout://register?...`) and/or a CLI (`Loadout.exe register ...`).
 
 For CodePrint-generated Windows apps this shows up as an optional
-**Settings -> Startup -> Add to Startup Profiles** action, and the app must work normally
-when Startup Profiles is not installed.
+**Settings -> Startup -> Add to Loadout** action, and the app must work normally
+when Loadout is not installed.
 
 Contract details: [docs/INTEGRATION.md](docs/INTEGRATION.md).
 
@@ -114,23 +120,23 @@ Build and run from source:
 ```powershell
 git clone https://github.com/lukr-99/startup-profiles.git
 cd startup-profiles
-dotnet build StartupProfiles.slnx
-dotnet test StartupProfiles.slnx
-dotnet run --project src/StartupProfiles.App
+dotnet build Loadout.slnx
+dotnet test Loadout.slnx
+dotnet run --project src/Loadout.App
 ```
 
 Or install it for the current user (no elevation) with the installer from the
 [latest release](https://github.com/lukr-99/startup-profiles/releases/latest), or build one with
 `.\installer\build-installer.ps1` (needs Inno Setup 6). It installs to
-`%LOCALAPPDATA%\Programs\StartupProfiles`, starts at login, registers the `startupprofiles://` protocol,
+`%LOCALAPPDATA%\Programs\Loadout`, starts at login, registers the `loadout://` protocol,
 installs the Claude agent skill, and on a first install offers to take over Windows startup (below).
 Uninstall it from Windows Settings > Apps; that switches the taken-over startup apps back on and keeps
-your profiles in `%APPDATA%\StartupProfiles`. The app checks once a day for a new version and installs
+your profiles in `%APPDATA%\Loadout`. The app checks once a day for a new version and installs
 it when you agree (Settings > Updates, or the tray menu).
 
 From source, the script installer does the same. This publishes the app to
-`%LOCALAPPDATA%\Programs\StartupProfiles`, adds a Start Menu shortcut, registers the launcher to run
-at login, registers the `startupprofiles://` protocol, and installs the Claude agent skill:
+`%LOCALAPPDATA%\Programs\Loadout`, adds a Start Menu shortcut, registers the launcher to run
+at login, registers the `loadout://` protocol, and installs the Claude agent skill:
 
 ```powershell
 .\install\install.ps1
@@ -138,9 +144,9 @@ at login, registers the `startupprofiles://` protocol, and installs the Claude a
 
 Install also **takes over Windows startup**: every startup app that is currently on (per-user `Run`
 key, your Startup folder, and packaged Store-app startup tasks) is added to the **Everything** profile
-and switched off in Windows - the same reversible switch Task Manager uses - so Startup Profiles is the
+and switched off in Windows - the same reversible switch Task Manager uses - so Loadout is the
 one app that starts at login. All-users entries need admin, so they are left on. To see what it would
-pick up, run `StartupProfiles.exe --list-startup`.
+pick up, run `Loadout.exe --list-startup`.
 
 Useful switches: `-FrameworkDependent` (smaller build, needs the .NET 10 Desktop Runtime),
 `-KeepStartupApps` (leave existing startup apps alone), `-NoStartup` (don't run at login; implies

@@ -1,8 +1,10 @@
 name: Release
 
 # Cut a release by pushing a tag like v0.2.0. This publishes a self-contained build, signs it, and
-# attaches to a GitHub Release: StartupProfiles-Setup-<version>.exe (the Inno installer the in-app
-# updater downloads) and StartupProfiles-<version>-win-x64.zip, each with a .sha256 checksum. The tag
+# attaches to a GitHub Release: Loadout-Setup-<version>.exe (the Inno installer the in-app
+# updater downloads) and Loadout-<version>-win-x64.zip, each with a .sha256 checksum. A copy of the
+# installer named StartupProfiles-Setup-<version>.exe is attached too, so installs of the old name
+# (Startup Profiles) can still update to this one. The tag
 # must match VersionPrefix in Directory.Build.props, and the version is stamped into the assembly via
 # -p:Version. The updater reads releases/latest, so the repository's releases must be public.
 on:
@@ -44,11 +46,11 @@ jobs:
           "version=$tagVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: Test
-        run: dotnet test StartupProfiles.slnx -c Release
+        run: dotnet test Loadout.slnx -c Release
 
       - name: Publish (self-contained win-x64)
         run: >
-          dotnet publish src/StartupProfiles.App/StartupProfiles.App.csproj
+          dotnet publish src/Loadout.App/Loadout.App.csproj
           -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false
           -p:Version=${{ steps.ver.outputs.version }}
           -o publish
@@ -64,8 +66,8 @@ jobs:
           WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
         run: >-
           ./tools/sign-windows-artifacts.ps1
-          -Path 'publish/StartupProfiles*.exe'
-          -Description 'Startup Profiles'
+          -Path 'publish/Loadout*.exe'
+          -Description 'Loadout'
           -DescriptionUrl 'https://github.com/lukr-99/startup-profiles'
 
       - name: Install Inno Setup
@@ -87,13 +89,13 @@ jobs:
           WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
         run: >-
           ./tools/sign-windows-artifacts.ps1
-          -Path 'installer/dist/StartupProfiles-Setup-*.exe'
-          -Description 'Startup Profiles Setup'
+          -Path 'installer/dist/Loadout-Setup-*.exe'
+          -Description 'Loadout Setup'
           -DescriptionUrl 'https://github.com/lukr-99/startup-profiles'
 
       - name: Package
         shell: pwsh
-        run: Compress-Archive -Path publish\* -DestinationPath StartupProfiles-${{ steps.ver.outputs.version }}-win-x64.zip
+        run: Compress-Archive -Path publish\* -DestinationPath Loadout-${{ steps.ver.outputs.version }}-win-x64.zip
 
       # Same shape as sha256sum output: "<hash>  <file name>", so `sha256sum -c` can check it.
       # Written after signing, so each hash matches the file users download. The updater refuses an
@@ -101,9 +103,13 @@ jobs:
       - name: Write checksums
         shell: pwsh
         run: |
-          $setup = 'installer/dist/StartupProfiles-Setup-${{ steps.ver.outputs.version }}.exe'
+          $setup = 'installer/dist/Loadout-Setup-${{ steps.ver.outputs.version }}.exe'
           Copy-Item -LiteralPath $setup -Destination .
-          foreach ($file in @('StartupProfiles-${{ steps.ver.outputs.version }}-win-x64.zip', (Split-Path $setup -Leaf))) {
+          # Transition: installs of the old name (Startup Profiles) look for StartupProfiles-Setup-*.exe, so
+          # the same installer is also attached under that name. Drop this once nobody runs the old name.
+          $bridge = 'StartupProfiles-Setup-${{ steps.ver.outputs.version }}.exe'
+          Copy-Item -LiteralPath $setup -Destination $bridge
+          foreach ($file in @('Loadout-${{ steps.ver.outputs.version }}-win-x64.zip', (Split-Path $setup -Leaf), $bridge)) {
             $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $file).Hash.ToLowerInvariant()
             [IO.File]::WriteAllText("$PWD/$file.sha256", "$hash  $file`n")
           }
@@ -112,7 +118,7 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          $files = @(Get-ChildItem -Path 'publish/StartupProfiles*.exe', 'installer/dist/*.exe' -ErrorAction SilentlyContinue)
+          $files = @(Get-ChildItem -Path 'publish/Loadout*.exe', 'installer/dist/*.exe' -ErrorAction SilentlyContinue)
           foreach ($file in $files) {
             $status = (Get-AuthenticodeSignature -LiteralPath $file.FullName).Status
             "- $($file.Name): $status" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
@@ -122,8 +128,10 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
+            Loadout-Setup-${{ steps.ver.outputs.version }}.exe
+            Loadout-Setup-${{ steps.ver.outputs.version }}.exe.sha256
             StartupProfiles-Setup-${{ steps.ver.outputs.version }}.exe
             StartupProfiles-Setup-${{ steps.ver.outputs.version }}.exe.sha256
-            StartupProfiles-${{ steps.ver.outputs.version }}-win-x64.zip
-            StartupProfiles-${{ steps.ver.outputs.version }}-win-x64.zip.sha256
+            Loadout-${{ steps.ver.outputs.version }}-win-x64.zip
+            Loadout-${{ steps.ver.outputs.version }}-win-x64.zip.sha256
           generate_release_notes: true

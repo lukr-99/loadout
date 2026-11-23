@@ -1,19 +1,19 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Install Windows Startup Profiles for the current user (no elevation required).
+    Install Loadout (formerly Startup Profiles) for the current user (no elevation required).
 
 .DESCRIPTION
-    Publishes StartupProfiles, installs it to %LOCALAPPDATA%\Programs\StartupProfiles, adds a Start
-    Menu shortcut, registers the launcher to run at login, registers the startupprofiles:// protocol,
+    Publishes Loadout, installs it to %LOCALAPPDATA%\Programs\Loadout, adds a Start
+    Menu shortcut, registers the launcher to run at login, registers the loadout:// and startupprofiles:// protocols,
     and installs the Claude agent skill to %USERPROFILE%\.claude\skills. All state is per-user.
 
     Unless -KeepStartupApps (or -NoStartup) is given, it then takes over Windows startup: every startup
     app that is currently on and can be switched per-user is added to the Everything profile and switched
-    off in Windows (reversibly, exactly like Task Manager), so Startup Profiles is the one app that starts
+    off in Windows (reversibly, exactly like Task Manager), so Loadout is the one app that starts
     at login. All-users entries (which need admin) are left on. uninstall.ps1 switches them back on.
 
-    Login, protocol, and startup changes are performed by the app itself (StartupProfiles.exe
+    Login, protocol, and startup changes are performed by the app itself (Loadout.exe
     --register-login / --register-protocol / --take-over-startup) so the registry formats stay owned by
     the app's seams.
 
@@ -31,7 +31,7 @@
     Leave existing Windows startup apps as they are instead of moving them into the Everything profile.
 
 .PARAMETER NoProtocol
-    Do not register the startupprofiles:// protocol handler.
+    Do not register the loadout:// (and old startupprofiles://) protocol handler.
 
 .PARAMETER NoSkill
     Do not install the Claude agent skill.
@@ -54,14 +54,16 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $RepoRoot   = Split-Path -Parent $PSScriptRoot
-$AppProject = Join-Path $RepoRoot 'src\StartupProfiles.App\StartupProfiles.App.csproj'
-$InstallDir = Join-Path $env:LOCALAPPDATA 'Programs\StartupProfiles'
-$ExePath    = Join-Path $InstallDir 'StartupProfiles.exe'
+$AppProject = Join-Path $RepoRoot 'src\Loadout.App\Loadout.App.csproj'
+$InstallDir = Join-Path $env:LOCALAPPDATA 'Programs\Loadout'
+$ExePath    = Join-Path $InstallDir 'Loadout.exe'
+# The old name (Startup Profiles): removed on install, so an upgrade leaves one copy.
+$OldInstallDir = Join-Path $env:LOCALAPPDATA 'Programs\StartupProfiles'
 
 function Write-Step($message) { Write-Host "==> $message" -ForegroundColor Cyan }
 
 function Stop-RunningInstance {
-    Get-Process -Name 'StartupProfiles' -ErrorAction SilentlyContinue | ForEach-Object {
+    Get-Process -Name 'Loadout', 'StartupProfiles' -ErrorAction SilentlyContinue | ForEach-Object {
         Write-Step "Stopping running instance (pid $($_.Id))"
         $_ | Stop-Process -Force
     }
@@ -83,20 +85,26 @@ function Publish-App {
 
 function Add-StartMenuShortcut {
     $startMenu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'
-    $lnk = Join-Path $startMenu 'Startup Profiles.lnk'
+    $lnk = Join-Path $startMenu 'Loadout.lnk'
     Write-Step "Creating Start Menu shortcut"
+    $oldLnk = Join-Path $startMenu 'Startup Profiles.lnk'
+    if (Test-Path $oldLnk) { Remove-Item -Path $oldLnk -Force }
     $shell = New-Object -ComObject WScript.Shell
     $shortcut = $shell.CreateShortcut($lnk)
     $shortcut.TargetPath = $ExePath
     $shortcut.WorkingDirectory = $InstallDir
-    $shortcut.Description = 'Windows Startup Profiles'
+    $shortcut.Description = 'Loadout'
     $shortcut.Save()
 }
 
 function Set-ConfigPort {
     if ($Port -eq 8790) { return }
     Write-Step "Persisting API port $Port"
-    $dir = Join-Path $env:APPDATA 'StartupProfiles'
+    # Before the first start under the new name, the data still lives in the old folder and the app copies
+    # it over; creating the new folder now would stop that copy, so write the port to the old one then.
+    $new = Join-Path $env:APPDATA 'Loadout'
+    $old = Join-Path $env:APPDATA 'StartupProfiles'
+    $dir = if ((-not (Test-Path $new)) -and (Test-Path $old)) { $old } else { $new }
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
     $path = Join-Path $dir 'config.json'
     $config = if (Test-Path $path) { Get-Content $path -Raw | ConvertFrom-Json } else { $null }
@@ -120,17 +128,20 @@ function Invoke-Maintenance($argument) {
 }
 
 function Install-Skill {
-    $source = Join-Path $RepoRoot 'skills\startup-profiles'
+    $source = Join-Path $RepoRoot 'skills\loadout'
     if (-not (Test-Path $source)) { Write-Warning "Agent skill not found at $source; skipping."; return }
-    $dest = Join-Path $env:USERPROFILE '.claude\skills\startup-profiles'
+    $dest = Join-Path $env:USERPROFILE '.claude\skills\loadout'
+    $oldSkill = Join-Path $env:USERPROFILE '.claude\skills\startup-profiles'
+    if (Test-Path $oldSkill) { Remove-Item -Recurse -Force $oldSkill }
     Write-Step "Installing agent skill to $dest"
     if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
     New-Item -ItemType Directory -Force -Path $dest | Out-Null
     Copy-Item -Path (Join-Path $source '*') -Destination $dest -Recurse -Force
 }
 
-Write-Host "Installing Windows Startup Profiles..." -ForegroundColor Green
+Write-Host "Installing Loadout..." -ForegroundColor Green
 Stop-RunningInstance
+if (Test-Path $OldInstallDir) { Write-Step "Removing the old Startup Profiles program folder"; Remove-Item -Recurse -Force $OldInstallDir }
 Publish-App
 Add-StartMenuShortcut
 Set-ConfigPort
@@ -140,7 +151,7 @@ if (-not $NoStartup -and -not $KeepStartupApps) {
     Write-Step "Moving Windows startup apps into the Everything profile"
     Invoke-Maintenance '--take-over-startup'
 }
-if (-not $NoProtocol) { Write-Step "Registering startupprofiles:// protocol"; Invoke-Maintenance '--register-protocol' }
+if (-not $NoProtocol) { Write-Step "Registering loadout:// and startupprofiles:// protocols"; Invoke-Maintenance '--register-protocol' }
 if (-not $NoSkill) { Install-Skill }
 
 Write-Host ""

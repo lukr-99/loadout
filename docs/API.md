@@ -1,4 +1,4 @@
-# Startup Profiles local API
+# Loadout local API
 
 > Implemented (Milestone 3); `POST /api/register` landed with Milestone 5.
 
@@ -6,7 +6,11 @@ The configuration UI and any local agent talk to a **loopback-only** HTTP server
 `127.0.0.1` (mirroring Treeline). When running, the app writes its live URL to a discovery
 file:
 
-- Windows: `%APPDATA%\StartupProfiles\endpoint.json`
+- Windows: `%APPDATA%\Loadout\endpoint.json`
+- Deprecated: `%APPDATA%\StartupProfiles\endpoint.json`, the path of the app's old name (Startup
+  Profiles). For one transition period the app writes the same file there too, as long as that folder
+  exists, so existing agents and skills keep working. New code reads the new path first and falls back
+  to the old one. The old path will be dropped in a later release.
 
 All request/response bodies are JSON. Operation endpoints return
 `{ "ok": bool, "output": string?, "error": string? }`.
@@ -51,7 +55,7 @@ action, single-use, and expires quickly, so an agent cannot skip the prompt.
 ## Registration
 
 `POST /api/register` lets a local agent or app request that an application be added to one or more
-profiles, to the base, or to neither. Startup Profiles owns the decision, so it uses the same two-phase
+profiles, to the base, or to neither. Loadout owns the decision, so it uses the same two-phase
 confirmation as delete: an app is never added silently.
 
 Request body:

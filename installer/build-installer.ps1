@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Publish Startup Profiles self-contained and compile the per-user Inno Setup installer.
+    Publish Loadout self-contained and compile the per-user Inno Setup installer.
 
 .DESCRIPTION
     Adapted from CodePrint's templates/dotnet/installer/build-installer.ps1. The version comes from
     VersionPrefix in Directory.Build.props unless -Version is given. Output:
-    installer/dist/StartupProfiles-Setup-<version>.exe and, unless -NoChecksum, its .sha256 next to it
+    installer/dist/Loadout-Setup-<version>.exe and, unless -NoChecksum, its .sha256 next to it
     ("<hash>  <file name>", the format the in-app updater checks). The release workflow passes
     -NoChecksum, signs the setup, and only then writes the checksum, so the hash matches the signed file.
     installer/publish and installer/dist are ignored by Git.
@@ -28,7 +28,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $installerRoot = [System.IO.Path]::GetFullPath($PSScriptRoot)
 $repositoryRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$project = Join-Path $repositoryRoot 'src\StartupProfiles.App\StartupProfiles.App.csproj'
+$project = Join-Path $repositoryRoot 'src\Loadout.App\Loadout.App.csproj'
 
 if (-not $Version) {
     [xml]$props = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'Directory.Build.props')
@@ -56,26 +56,26 @@ $dist = Join-Path $installerRoot 'dist'
 
 if ($PublishDir) {
     $publish = [System.IO.Path]::GetFullPath($PublishDir)
-    if (-not (Test-Path -LiteralPath (Join-Path $publish 'StartupProfiles.exe'))) { throw "No StartupProfiles.exe in $publish" }
+    if (-not (Test-Path -LiteralPath (Join-Path $publish 'Loadout.exe'))) { throw "No Loadout.exe in $publish" }
 } else {
     $publish = Join-Path $installerRoot 'publish'
     if (Test-Path -LiteralPath $publish) { Remove-Item -LiteralPath $publish -Recurse -Force }
     [System.IO.Directory]::CreateDirectory($publish) | Out-Null
 
-    Write-Host "Publishing Startup Profiles $Version ($Configuration, $Runtime)..." -ForegroundColor Cyan
+    Write-Host "Publishing Loadout $Version ($Configuration, $Runtime)..." -ForegroundColor Cyan
     & dotnet publish $project -c $Configuration -r $Runtime --self-contained true `
         -p:PublishSingleFile=false -p:Version=$Version -o $publish --nologo
     if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed.' }
 }
 
 & $IsccPath "/DMyAppVersion=$Version" "/DMyVersionInfoVersion=$versionInfoVersion" `
-    "/DPublishDir=$publish" (Join-Path $installerRoot 'StartupProfiles.iss')
+    "/DPublishDir=$publish" (Join-Path $installerRoot 'Loadout.iss')
 if ($LASTEXITCODE -ne 0) { throw 'Inno Setup compilation failed.' }
 
 # The setup holds the files now. Drop a publish folder this script made: CodePrint's validator scans it.
 if (-not $PublishDir) { Remove-Item -LiteralPath $publish -Recurse -Force }
 
-$setup = Join-Path $dist "StartupProfiles-Setup-$Version.exe"
+$setup = Join-Path $dist "Loadout-Setup-$Version.exe"
 if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw "Expected installer was not produced: $setup" }
 
 if (-not $NoChecksum) {

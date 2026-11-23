@@ -19,6 +19,18 @@ came from a tool or platform trap. Put new entries at the top, in this shape:
 A pitfall that could hit another repository is also reported to CodePrint. CodePrint's
 `docs/pitfalls/README.md` explains how.
 
+## An empty data folder created too early blocks the data migration
+
+- Symptom: after the rename to Loadout, the app starts with no profiles although `%APPDATA%\StartupProfiles`
+  still holds them.
+- Cause: `DataMigration` copies the old folder only when `%APPDATA%\Loadout` is missing or empty. Anything
+  that puts a file in the new folder first (for example a `config.json` with only the API port) makes
+  it look like a finished setup.
+- Fix: run `DataMigration` before anything touches the data folder (first line of `Main`), and make
+  scripts such as `install.ps1` write to the old folder while the new one does not exist yet.
+- Closed off by: `DataMigrationTests` (empty new folder, both folders present, failure half way)
+- Seen: 2026-11-23, the Loadout rename
+
 ## A WPF layout test passes locally and fails on the CI runner
 
 - Symptom: `Assert.Single() Failure: The collection contained 2 items` in
@@ -76,8 +88,8 @@ A pitfall that could hit another repository is also reported to CodePrint. CodeP
 ## A packaged app's shell sees a different AppData and HKCU
 
 - Symptom: `install/install.ps1` reports success, but the app is not in
-  `%LOCALAPPDATA%\Programs\StartupProfiles`, nothing starts at login, and the data files read from
-  `%APPDATA%\StartupProfiles` are old or missing compared with what the running app shows.
+  `%LOCALAPPDATA%\Programs\Loadout` (before the rename: `...\StartupProfiles`), nothing starts at
+  login, and the data files read from `%APPDATA%\Loadout` are old or missing compared with what the running app shows.
 - Cause: a process started inside a packaged (MSIX) app, such as the Claude desktop app and every
   shell or agent it starts, has AppData and some HKCU writes redirected into a private copy under
   `%LOCALAPPDATA%\Packages\<package family>\LocalCache\...`. The install lands there, and reads see
@@ -105,12 +117,12 @@ A pitfall that could hit another repository is also reported to CodePrint. CodeP
 
 ## The WPF markup compile asks for a runtime that is not installed
 
-- Symptom: building `StartupProfiles.App` fails in the WPF markup-compile step because it asks for
+- Symptom: building `Loadout.App` fails in the WPF markup-compile step because it asks for
   the shared runtime `10.0.9`, while the dev box only has `10.0.7` installed. The exact message was
   not recorded.
 - Cause: the SDK resolves a newer patch runtime for the WPF markup-compile helper than the one
   installed on the machine.
-- Fix: `src/StartupProfiles.App/StartupProfiles.App.csproj` pins
+- Fix: `src/Loadout.App/Loadout.App.csproj` pins
   `<RuntimeFrameworkVersion>10.0.7</RuntimeFrameworkVersion>`. Roll-forward still runs the app on
   newer patches. Remove the pin once the machine has a matching runtime. See
   [ADR 0001](adr/0001-local-wpf-mvvm.md).

@@ -1,0 +1,679 @@
+<Window x:Class="Loadout.App.Config.ConfigWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=config:ConfigViewModel, IsDesignTimeCreatable=False}"
+        xmlns:config="clr-namespace:Loadout.App.Config"
+        xmlns:ui="clr-namespace:Loadout.App.Ui"
+        Title="Loadout - Configuration" Height="720" Width="1240"
+        MinHeight="560" MinWidth="1060"
+        Icon="pack://application:,,,/Loadout;component/Assets/app.ico"
+        WindowStartupLocation="CenterScreen" FontFamily="Segoe UI"
+        Background="{DynamicResource App.Background}"
+        TextElement.Foreground="{DynamicResource App.Text}">
+  <Window.Resources>
+    <ui:NullToVisibilityConverter x:Key="NullToVis" />
+    <ui:BoolToVisibilityConverter x:Key="BoolToVis" />
+    <ui:ActionIconConverter x:Key="ActionIcon" />
+    <ui:ActionGlyphConverter x:Key="ActionGlyph" />
+    <ui:NotConverter x:Key="Not" />
+  </Window.Resources>
+
+  <TabControl>
+    <!-- ============ Profiles ============ -->
+    <TabItem Header="Profiles">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="240" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="270" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+        <DockPanel Grid.Column="0" Background="{DynamicResource App.Surface}">
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="12,10">
+            <TextBlock Text="Profiles" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <Button Content="+ New" Command="{Binding NewCommand}" Margin="12,0,0,0" Padding="8,3" />
+          </StackPanel>
+          <!-- Drop apps, library items, files, or table rows on a profile (or Base) to add them there, saved. -->
+          <ListBox x:Name="ProfileList" ItemsSource="{Binding Profiles}" SelectedItem="{Binding Selected}"
+                   Background="Transparent" BorderThickness="0" Margin="6" AllowDrop="True"
+                   DragEnter="OnProfileListDragOver" DragOver="OnProfileListDragOver"
+                   DragLeave="OnProfileListDragLeave" Drop="OnProfileListDrop">
+            <!-- The base is pinned first and set apart from the profiles below it. -->
+            <ListBox.ItemContainerStyle>
+              <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding IsBase}" Value="True">
+                    <Setter Property="Margin" Value="0,1,0,12" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <!-- Fills the row (negative margin = the item padding) so a drop target lights up whole. -->
+                <Border Margin="-9,-7" Padding="9,7" CornerRadius="5" BorderThickness="1">
+                  <Border.Style>
+                    <Style TargetType="Border">
+                      <Setter Property="Background" Value="Transparent" />
+                      <Setter Property="BorderBrush" Value="Transparent" />
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsDropTarget}" Value="True">
+                          <Setter Property="Background" Value="{DynamicResource App.SurfaceHover}" />
+                          <Setter Property="BorderBrush" Value="{DynamicResource App.Accent}" />
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </Border.Style>
+                  <DockPanel>
+                    <!-- The profile's icon (or initial); the base gets a layers glyph. -->
+                    <Border DockPanel.Dock="Left" Width="30" Height="30" CornerRadius="15" Margin="0,0,10,0"
+                            Background="{DynamicResource App.SurfaceAlt}" VerticalAlignment="Center">
+                      <Grid>
+                        <TextBlock Text="{Binding Glyph}" FontFamily="Segoe UI Emoji, Segoe UI" FontSize="15"
+                                   FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Visibility="{Binding IsBase, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+                        <TextBlock Text="&#xE81E;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Visibility="{Binding IsBase, Converter={StaticResource BoolToVis}}" />
+                      </Grid>
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                      <TextBlock FontSize="11" Margin="0,1,0,0" Foreground="{DynamicResource App.Muted}">
+                        <TextBlock.Style>
+                          <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="{Binding CountText}" />
+                            <Style.Triggers>
+                              <DataTrigger Binding="{Binding IsBase}" Value="True">
+                                <Setter Property="Text" Value="{Binding CountText, StringFormat='Runs first, every time · {0}'}" />
+                              </DataTrigger>
+                            </Style.Triggers>
+                          </Style>
+                        </TextBlock.Style>
+                      </TextBlock>
+                    </StackPanel>
+                  </DockPanel>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+
+        <!-- Empty state -->
+        <TextBlock Grid.Column="1" Text="Select a profile, or create one."
+                   Foreground="{DynamicResource App.Muted}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Visibility="{Binding Editor, Converter={StaticResource NullToVis}, ConverterParameter=invert}" />
+
+        <!-- Editor. Every change saves by itself (see ConfigViewModel.SaveState). -->
+        <Grid Grid.Column="1" Margin="24,18,20,14"
+              Visibility="{Binding Editor, Converter={StaticResource NullToVis}}">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+
+          <!-- Header: icon, name, and the profile-wide choices; Run and Delete on the right. -->
+          <DockPanel Grid.Row="0" LastChildFill="True">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+              <Button Command="{Binding RunCommand}" Style="{StaticResource App.AccentButton}"
+                      ToolTip="Start everything in this list now">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="&#xE768;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12"
+                             VerticalAlignment="Center" Margin="0,0,8,0" />
+                  <TextBlock Text="Run now" />
+                </StackPanel>
+              </Button>
+              <Button Content="&#xE74D;" Command="{Binding DeleteCommand}" Style="{StaticResource App.DangerIconButton}"
+                      Width="34" Height="34" Margin="8,0,0,0" ToolTip="Delete this profile"
+                      Visibility="{Binding Editor.IsProfile, Converter={StaticResource BoolToVis}}" />
+            </StackPanel>
+
+            <!-- Base -->
+            <StackPanel Visibility="{Binding Editor.IsBase, Converter={StaticResource BoolToVis}}" Margin="0,0,16,0">
+              <TextBlock Text="Base" FontSize="22" FontWeight="SemiBold" />
+              <TextBlock Foreground="{DynamicResource App.Muted}" TextWrapping="Wrap" Margin="0,4,0,0"
+                         Text="These start first, every time any profile runs. A profile can skip them with 'Also start Base'." />
+            </StackPanel>
+
+            <!-- Profile -->
+            <DockPanel Visibility="{Binding Editor.IsProfile, Converter={StaticResource BoolToVis}}" Margin="0,0,16,0">
+              <Button DockPanel.Dock="Left" Command="{Binding PickIconCommand}" Width="56" Height="56" Padding="0"
+                      Margin="0,0,14,0" VerticalAlignment="Top" ToolTip="Change the icon"
+                      Background="{DynamicResource App.SurfaceAlt}">
+                <Button.Template>
+                  <ControlTemplate TargetType="Button">
+                    <Grid>
+                      <Border x:Name="bd" CornerRadius="28" Background="{TemplateBinding Background}"
+                              BorderBrush="{DynamicResource App.Border}" BorderThickness="1">
+                        <TextBlock Text="{Binding Editor.Glyph}" FontFamily="Segoe UI Emoji, Segoe UI" FontSize="26"
+                                   FontWeight="SemiBold" Foreground="{DynamicResource App.Text}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <!-- Pencil badge so it reads as editable. -->
+                      <Border Width="20" Height="20" CornerRadius="10" Background="{DynamicResource App.Accent}"
+                              HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                        <TextBlock Text="&#xE70F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10"
+                                   Foreground="{DynamicResource App.OnAccent}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                      <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource App.Accent}" />
+                      </Trigger>
+                    </ControlTemplate.Triggers>
+                  </ControlTemplate>
+                </Button.Template>
+              </Button>
+              <StackPanel>
+                <TextBox Text="{Binding Editor.Name, UpdateSourceTrigger=PropertyChanged}" FontSize="20"
+                         FontWeight="SemiBold" MaxWidth="420" HorizontalAlignment="Left" MinWidth="220"
+                         ToolTip="Profile name" />
+                <WrapPanel Margin="0,10,0,0">
+                  <CheckBox Content="Also start Base" IsChecked="{Binding Editor.IncludeBase}" Margin="0,0,20,6"
+                            VerticalAlignment="Center" ToolTip="Start the Base list before this profile's own." />
+                  <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <TextBlock Text="At login" Foreground="{DynamicResource App.Muted}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <ComboBox ItemsSource="{x:Static config:ProfileEditor.StartupBehaviours}"
+                              SelectedValuePath="Value" DisplayMemberPath="Label"
+                              SelectedValue="{Binding Editor.StartupBehaviour}" Width="220"
+                              ToolTip="When the launcher opens at login. It counts down 10 seconds first, so you can still pick something else." />
+                  </StackPanel>
+                </WrapPanel>
+              </StackPanel>
+            </DockPanel>
+          </DockPanel>
+
+          <!-- List header -->
+          <DockPanel Grid.Row="1" Margin="0,18,0,8">
+            <Button DockPanel.Dock="Right" Command="{Binding AddActionCommand}" Padding="10,5"
+                    ToolTip="Add a step you fill in yourself">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="11"
+                           VerticalAlignment="Center" Margin="0,0,7,0" />
+                <TextBlock Text="Add step" />
+              </StackPanel>
+            </Button>
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="What starts" FontSize="15" FontWeight="SemiBold" />
+              <TextBlock FontSize="11" Foreground="{DynamicResource App.Muted}" Margin="0,2,0,0" TextWrapping="Wrap"
+                         Text="Top to bottom. Drag a card to reorder it. Drop apps from the right, or files from Explorer." />
+            </StackPanel>
+          </DockPanel>
+
+          <!-- Steps as cards. Click one to see and change its details; the trash icon removes it (Undo below). -->
+          <Grid Grid.Row="2">
+            <ListBox x:Name="ActionsList" ItemsSource="{Binding Editor.Actions}" SelectedItem="{Binding SelectedAction}"
+                     ItemContainerStyle="{StaticResource App.ActionCard}" BorderThickness="1"
+                     BorderBrush="Transparent" Padding="0,0,4,0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="False"
+                     AllowDrop="True" DragEnter="OnActionsDragOver" DragOver="OnActionsDragOver"
+                     DragLeave="OnActionsDragLeave" Drop="OnActionsDrop"
+                     PreviewMouseLeftButtonDown="OnActionsMouseDown" PreviewMouseMove="OnDragSourceMouseMove"
+                     KeyDown="OnActionsKeyDown">
+              <ListBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type config:ActionEditor}">
+                  <StackPanel>
+                    <!-- Card header: also the drag handle. -->
+                    <DockPanel Tag="DragHandle" Background="Transparent" Cursor="SizeAll" Margin="6,8,8,8">
+                      <TextBlock DockPanel.Dock="Left" Text="&#xE76F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                 FontSize="12" Foreground="{DynamicResource App.Muted}" VerticalAlignment="Center"
+                                 Margin="2,0,8,0" Opacity="0.6" />
+                      <Grid DockPanel.Dock="Left" Width="32" Height="32" Margin="0,0,12,0" VerticalAlignment="Center">
+                        <Border CornerRadius="7" Background="{DynamicResource App.SurfaceAlt}" />
+                        <TextBlock Text="{Binding Glyph}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16"
+                                   Foreground="{DynamicResource App.Muted}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center">
+                          <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                              <Setter Property="Visibility" Value="Collapsed" />
+                              <Style.Triggers>
+                                <DataTrigger Binding="{Binding Source, ElementName=ShellIcon}" Value="{x:Null}">
+                                  <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                              </Style.Triggers>
+                            </Style>
+                          </TextBlock.Style>
+                        </TextBlock>
+                        <Image x:Name="ShellIcon" Width="22" Height="22" Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="HighQuality">
+                          <Image.Source>
+                            <MultiBinding Converter="{StaticResource ActionIcon}">
+                              <Binding Path="Type" />
+                              <Binding Path="Target" />
+                              <Binding Path="Arguments" />
+                            </MultiBinding>
+                          </Image.Source>
+                        </Image>
+                      </Grid>
+                      <Button DockPanel.Dock="Right" Content="&#xE74D;"
+                              Command="{Binding DataContext.RemoveActionCommand, ElementName=ActionsList}"
+                              CommandParameter="{Binding}" ToolTip="Remove this step" VerticalAlignment="Center">
+                        <!-- Shown on the hovered or selected card only, so the list stays calm. -->
+                        <Button.Style>
+                          <Style TargetType="Button" BasedOn="{StaticResource App.DangerIconButton}">
+                            <Setter Property="Visibility" Value="Hidden" />
+                            <Style.Triggers>
+                              <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                              </DataTrigger>
+                              <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                              </DataTrigger>
+                            </Style.Triggers>
+                          </Style>
+                        </Button.Style>
+                      </Button>
+                      <StackPanel VerticalAlignment="Center" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                          <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                          <Border Style="{StaticResource App.Chip}" Margin="8,0,0,0" Padding="6,0,7,1"
+                                  Visibility="{Binding IsLinked, Converter={StaticResource BoolToVis}}"
+                                  ToolTip="Saved in Created. Change what it starts there, and every profile using it follows.">
+                            <StackPanel Orientation="Horizontal">
+                              <TextBlock Text="&#xE71B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="9"
+                                         Foreground="{DynamicResource App.Accent}" VerticalAlignment="Center" Margin="0,1,4,0" />
+                              <TextBlock Text="from Created" FontSize="11" Foreground="{DynamicResource App.Accent}" />
+                            </StackPanel>
+                          </Border>
+                        </StackPanel>
+                        <TextBlock Text="{Binding Summary}" FontSize="12" Foreground="{DynamicResource App.Muted}"
+                                   TextTrimming="CharacterEllipsis" Margin="0,2,0,0" ToolTip="{Binding Summary}" />
+                        <ItemsControl ItemsSource="{Binding Badges}" Margin="0,5,0,0"
+                                      Visibility="{Binding Badges, Converter={StaticResource BoolToVis}}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <WrapPanel />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <Border Style="{StaticResource App.Chip}">
+                                <TextBlock Text="{Binding}" FontSize="11" Foreground="{DynamicResource App.Muted}" />
+                              </Border>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </DockPanel>
+
+                    <!-- Details: only on the selected card. -->
+                    <Border BorderBrush="{DynamicResource App.Border}" BorderThickness="0,1,0,0" Padding="62,12,16,14"
+                            Visibility="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Converter={StaticResource BoolToVis}}">
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="150" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,8"
+                                   Foreground="{DynamicResource App.Muted}"
+                                   Visibility="{Binding IsLinked, Converter={StaticResource BoolToVis}}"
+                                   Text="This step uses an item from Created. Change what it starts there. When and how it runs is set here." />
+
+                        <TextBlock Grid.Row="1" Text="Kind" Foreground="{DynamicResource App.Muted}" VerticalAlignment="Center" />
+                        <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,3" Width="200" HorizontalAlignment="Left"
+                                  ItemsSource="{x:Static config:ActionLabels.Types}"
+                                  SelectedValuePath="Value" DisplayMemberPath="Label"
+                                  SelectedValue="{Binding Type}" IsEnabled="{Binding IsEditable}" />
+
+                        <TextBlock Grid.Row="2" Text="{Binding TargetLabel}" Foreground="{DynamicResource App.Muted}" VerticalAlignment="Center" />
+                        <DockPanel Grid.Row="2" Grid.Column="1" Margin="0,3">
+                          <Button DockPanel.Dock="Right" Content="Browse..." Margin="6,0,0,0" Padding="10,4"
+                                  Command="{Binding DataContext.BrowseTargetCommand, ElementName=ActionsList}"
+                                  CommandParameter="{Binding}"
+                                  Visibility="{Binding CanBrowse, Converter={StaticResource BoolToVis}}" />
+                          <TextBox Text="{Binding Target, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsLinked}" />
+                        </DockPanel>
+
+                        <TextBlock Grid.Row="3" Text="Arguments" Foreground="{DynamicResource App.Muted}" VerticalAlignment="Center"
+                                   Visibility="{Binding HasArguments, Converter={StaticResource BoolToVis}}" />
+                        <TextBox Grid.Row="3" Grid.Column="1" Margin="0,3" Text="{Binding Arguments, UpdateSourceTrigger=PropertyChanged}"
+                                 IsReadOnly="{Binding IsLinked}" ToolTip="Optional extra options for the program"
+                                 Visibility="{Binding HasArguments, Converter={StaticResource BoolToVis}}" />
+
+                        <TextBlock Grid.Row="4" Text="Wait first" Foreground="{DynamicResource App.Muted}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Margin="0,3">
+                          <TextBox Text="{Binding DelaySeconds, UpdateSourceTrigger=PropertyChanged}" Width="64"
+                                   HorizontalContentAlignment="Right" />
+                          <TextBlock Text="seconds before it starts" Foreground="{DynamicResource App.Muted}"
+                                     VerticalAlignment="Center" Margin="8,0,0,0" />
+                        </StackPanel>
+
+                        <TextBlock Grid.Row="5" Text="If it fails" Foreground="{DynamicResource App.Muted}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Margin="0,3">
+                          <ComboBox ItemsSource="{x:Static config:ActionLabels.FailureBehaviours}" Width="200"
+                                    SelectedValuePath="Value" DisplayMemberPath="Label"
+                                    SelectedValue="{Binding FailureBehaviour}" />
+                          <StackPanel Orientation="Horizontal" Margin="10,0,0,0"
+                                      Visibility="{Binding IsRetry, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="up to" Foreground="{DynamicResource App.Muted}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBox Text="{Binding RetryCount, UpdateSourceTrigger=PropertyChanged}" Width="48"
+                                     HorizontalContentAlignment="Right" />
+                            <TextBlock Text="more times" Foreground="{DynamicResource App.Muted}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                          </StackPanel>
+                        </StackPanel>
+
+                        <CheckBox Grid.Row="6" Grid.Column="1" Content="Run as administrator" Margin="0,8,0,0"
+                                  IsChecked="{Binding RunAsAdmin}" IsEnabled="{Binding IsEditable}" />
+                      </Grid>
+                    </Border>
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- Empty list -->
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"
+                        Visibility="{Binding Editor.Actions.Count, Converter={StaticResource BoolToVis}, ConverterParameter=invert}">
+              <TextBlock Text="&#xE896;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="28"
+                         Foreground="{DynamicResource App.Muted}" HorizontalAlignment="Center" />
+              <TextBlock Text="Nothing starts yet" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,10,0,4" />
+              <TextBlock Text="Drag an app from the right, drop a file from Explorer, or use Add step."
+                         Foreground="{DynamicResource App.Muted}" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Grid>
+
+          <!-- Footer: what just happened (with Undo after a removal), and whether everything is saved. -->
+          <DockPanel Grid.Row="3" Margin="0,10,0,0">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock Text="&#xE73E;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="11"
+                         Foreground="{DynamicResource App.Muted}" VerticalAlignment="Center" Margin="0,1,6,0"
+                         Visibility="{Binding SaveState, Converter={StaticResource NullToVis}}" />
+              <TextBlock Text="{Binding SaveState}" Foreground="{DynamicResource App.Muted}" FontSize="12" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock Text="{Binding Status}" Foreground="{DynamicResource App.Muted}" FontSize="12"
+                         TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+              <Button Content="Undo" Command="{Binding UndoRemoveCommand}" Style="{StaticResource App.LinkButton}"
+                      Margin="10,0,0,0" VerticalAlignment="Center"
+                      Visibility="{Binding CanUndoRemove, Converter={StaticResource BoolToVis}}" />
+            </StackPanel>
+          </DockPanel>
+        </Grid>
+
+        <!-- Side panel: Defaults (Windows startup apps) and Created (the global library). Drag from either into
+             the actions table; rows added from either link to a library item. -->
+        <Border Grid.Column="2" Background="{DynamicResource App.Surface}">
+          <TabControl>
+            <TabItem Header="Defaults">
+              <DockPanel>
+                <DockPanel DockPanel.Dock="Top" Margin="12,8,12,2">
+                  <Button Content="Refresh" Command="{Binding RefreshStartupAppsCommand}" DockPanel.Dock="Right"
+                          Padding="8,3" VerticalAlignment="Top" ToolTip="Read the startup apps from Windows again" />
+                  <TextBlock Text="Apps Windows starts at login. Drag one into the list or onto a profile, or double-click it. Anything Base starts is hidden while you edit a profile."
+                             FontSize="11" Foreground="{DynamicResource App.Muted}" TextWrapping="Wrap" Margin="0,0,8,0" />
+                </DockPanel>
+                <ListBox x:Name="StartupAppsList" ItemsSource="{Binding StartupApps}" Margin="6"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         PreviewMouseLeftButtonDown="OnStartupAppsMouseDown" PreviewMouseMove="OnDragSourceMouseMove"
+                         MouseDoubleClick="OnStartupAppsDoubleClick">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <DockPanel Cursor="SizeAll" Background="Transparent" ToolTip="{Binding Launch.Target}">
+                        <Grid DockPanel.Dock="Left" Width="22" Height="22" Margin="0,0,10,0" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Launch.Type, Converter={StaticResource ActionGlyph}}"
+                                     FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16"
+                                     Foreground="{DynamicResource App.Muted}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                              <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                  <DataTrigger Binding="{Binding Source, ElementName=PanelIcon}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                  </DataTrigger>
+                                </Style.Triggers>
+                              </Style>
+                            </TextBlock.Style>
+                          </TextBlock>
+                          <Image x:Name="PanelIcon" Width="22" Height="22" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality">
+                            <Image.Source>
+                              <MultiBinding Converter="{StaticResource ActionIcon}">
+                                <Binding Path="Launch.Type" />
+                                <Binding Path="Launch.Target" />
+                                <Binding Path="Launch.Arguments" />
+                              </MultiBinding>
+                            </Image.Source>
+                          </Image>
+                        </Grid>
+                        <StackPanel>
+                          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource App.Muted}"
+                                     TextTrimming="CharacterEllipsis" Margin="0,1,0,0" />
+                        </StackPanel>
+                      </DockPanel>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+              </DockPanel>
+            </TabItem>
+
+            <TabItem Header="Created">
+              <DockPanel>
+                <DockPanel DockPanel.Dock="Top" Margin="12,8,12,2">
+                  <Button Content="+ New" Command="{Binding Library.NewCommand}" DockPanel.Dock="Right"
+                          Padding="8,3" VerticalAlignment="Top" />
+                  <TextBlock Text="Things you set up once and reuse. Drag one into the list or onto a profile. Drop a card, an app, or a file from Explorer here to keep it."
+                             FontSize="11" Foreground="{DynamicResource App.Muted}" TextWrapping="Wrap" Margin="0,0,8,0" />
+                </DockPanel>
+
+                <!-- Form for the selected (or new) library item. -->
+                <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource App.Border}" BorderThickness="0,1,0,0"
+                        Padding="12,8,12,12" Visibility="{Binding Library.HasDraft, Converter={StaticResource BoolToVis}}">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="72" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="Name" Foreground="{DynamicResource App.Muted}" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="0" Grid.Column="1" Margin="0,3"
+                             Text="{Binding Library.Draft.Name, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Grid.Row="1" Text="Kind" Foreground="{DynamicResource App.Muted}" VerticalAlignment="Center" />
+                    <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,3"
+                              ItemsSource="{x:Static config:ActionLabels.Types}"
+                              SelectedValuePath="Value" DisplayMemberPath="Label"
+                              SelectedValue="{Binding Library.Draft.Type}" />
+                    <TextBlock Grid.Row="2" Text="Target" Foreground="{DynamicResource App.Muted}" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3"
+                             Text="{Binding Library.Draft.Target, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Grid.Row="3" Text="Arguments" Foreground="{DynamicResource App.Muted}" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="3" Grid.Column="1" Margin="0,3"
+                             Text="{Binding Library.Draft.Arguments, UpdateSourceTrigger=PropertyChanged}" />
+                    <CheckBox Grid.Row="4" Grid.Column="1" Content="Run as admin" Margin="0,6,0,2"
+                              IsChecked="{Binding Library.Draft.RunAsAdmin}" />
+                    <TextBlock Grid.Row="5" Grid.ColumnSpan="2" Text="{Binding Library.UsedBy}" FontSize="11"
+                               Foreground="{DynamicResource App.Muted}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                    <DockPanel Grid.Row="6" Grid.ColumnSpan="2" Margin="0,8,0,0">
+                      <Button Content="Save" Command="{Binding Library.SaveCommand}" Style="{StaticResource App.AccentButton}" />
+                      <Button Content="Delete" Command="{Binding Library.DeleteCommand}" Margin="8,0,0,0" Padding="12,7"
+                              Foreground="{DynamicResource App.Danger}" />
+                      <TextBlock Text="{Binding Library.Status}" Foreground="{DynamicResource App.Muted}" FontSize="11"
+                                 TextWrapping="Wrap" VerticalAlignment="Center" Margin="10,0,0,0" />
+                    </DockPanel>
+                  </Grid>
+                </Border>
+
+                <ListBox x:Name="LibraryList" ItemsSource="{Binding Library.Items}" SelectedItem="{Binding Library.Selected}"
+                         Margin="6" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AllowDrop="True"
+                         PreviewMouseLeftButtonDown="OnLibraryMouseDown" PreviewMouseMove="OnDragSourceMouseMove"
+                         MouseDoubleClick="OnLibraryDoubleClick"
+                         DragEnter="OnLibraryDragOver" DragOver="OnLibraryDragOver" DragLeave="OnLibraryDragLeave"
+                         Drop="OnLibraryDrop">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <DockPanel Cursor="SizeAll" Background="Transparent" ToolTip="{Binding Target}">
+                        <Grid DockPanel.Dock="Left" Width="22" Height="22" Margin="0,0,10,0" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Type, Converter={StaticResource ActionGlyph}}"
+                                     FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16"
+                                     Foreground="{DynamicResource App.Muted}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                              <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                  <DataTrigger Binding="{Binding Source, ElementName=PanelIcon}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                  </DataTrigger>
+                                </Style.Triggers>
+                              </Style>
+                            </TextBlock.Style>
+                          </TextBlock>
+                          <Image x:Name="PanelIcon" Width="22" Height="22" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality">
+                            <Image.Source>
+                              <MultiBinding Converter="{StaticResource ActionIcon}">
+                                <Binding Path="Type" />
+                                <Binding Path="Target" />
+                                <Binding Path="Arguments" />
+                              </MultiBinding>
+                            </Image.Source>
+                          </Image>
+                        </Grid>
+                        <StackPanel>
+                          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Type}" FontSize="11" Foreground="{DynamicResource App.Muted}"
+                                     TextTrimming="CharacterEllipsis" Margin="0,1,0,0" />
+                        </StackPanel>
+                      </DockPanel>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+              </DockPanel>
+            </TabItem>
+          </TabControl>
+        </Border>
+      </Grid>
+    </TabItem>
+
+    <!-- ============ Settings ============ -->
+    <!-- One scrolling page of setting cards, like Windows Settings: each row has its name and a one-line hint on
+         the left and its control on the right (App.SettingCard / App.SettingTitle / App.SettingHint). -->
+    <TabItem Header="Settings">
+      <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="24,18,24,24" MaxWidth="760" HorizontalAlignment="Left" MinWidth="520">
+
+          <TextBlock Text="General" Style="{StaticResource App.SettingGroup}" Margin="2,0,0,8" />
+          <Border Style="{StaticResource App.SettingCard}">
+            <DockPanel>
+              <ComboBox x:Name="ThemeBox" DockPanel.Dock="Right" Width="180" VerticalAlignment="Center"
+                        SelectionChanged="OnThemeChanged">
+                <ComboBoxItem Content="Same as Windows" />
+                <ComboBoxItem Content="Light" />
+                <ComboBoxItem Content="Dark" />
+              </ComboBox>
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Theme" Style="{StaticResource App.SettingTitle}" />
+                <TextBlock Text="High contrast follows Windows on its own." Style="{StaticResource App.SettingHint}" />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+          <Border Style="{StaticResource App.SettingCard}">
+            <DockPanel>
+              <CheckBox DockPanel.Dock="Right" IsChecked="{Binding DiscoverStartupApps}" VerticalAlignment="Center"
+                        ToolTip="Check for new startup apps when Loadout starts" />
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Ask about new startup apps" Style="{StaticResource App.SettingTitle}" />
+                <TextBlock Text="When an app adds itself to Windows startup, choose its profile." Style="{StaticResource App.SettingHint}" />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+
+          <!-- Updates: shown when the app has an updater (always, outside tests). -->
+          <StackPanel Visibility="{Binding Updates, Converter={StaticResource NullToVis}}">
+            <TextBlock Text="Updates" Style="{StaticResource App.SettingGroup}" />
+            <Border Style="{StaticResource App.SettingCard}">
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                  <Button Command="{Binding InstallUpdateCommand}" Style="{StaticResource App.AccentButton}" Margin="0,0,8,0"
+                          Visibility="{Binding Updates.AvailableVersion, Converter={StaticResource NullToVis}}"
+                          IsEnabled="{Binding Updates.IsBusy, Converter={StaticResource Not}}">
+                    <TextBlock Text="{Binding Updates.AvailableVersion, StringFormat='Install {0}'}" />
+                  </Button>
+                  <Button Content="Check now" Command="{Binding CheckForUpdatesCommand}" Padding="12,6"
+                          IsEnabled="{Binding Updates.IsBusy, Converter={StaticResource Not}}" />
+                </StackPanel>
+                <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                  <TextBlock x:Name="VersionText" Style="{StaticResource App.SettingTitle}" />
+                  <TextBlock Style="{StaticResource App.SettingHint}" TextWrapping="Wrap"
+                             Text="{Binding Updates.Status, TargetNullValue='Checks GitHub Releases. Installs only after you agree.'}" />
+                </StackPanel>
+              </DockPanel>
+            </Border>
+            <Border Style="{StaticResource App.SettingCard}">
+              <DockPanel>
+                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding Updates.AutoCheck}" VerticalAlignment="Center"
+                          ToolTip="Check for a new version once a day" />
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="Check once a day" Style="{StaticResource App.SettingTitle}" />
+                  <TextBlock Style="{StaticResource App.SettingHint}">
+                    <Run Text="Or download it yourself from the" />
+                    <Hyperlink NavigateUri="https://github.com/lukr-99/startup-profiles/releases" RequestNavigate="OnOpenLink"
+                               Foreground="{DynamicResource App.Accent}">release page</Hyperlink><Run Text="." />
+                  </TextBlock>
+                </StackPanel>
+              </DockPanel>
+            </Border>
+          </StackPanel>
+
+          <TextBlock Text="About" Style="{StaticResource App.SettingGroup}" />
+          <Border Style="{StaticResource App.SettingCard}">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Content="About..." Click="OnOpenAbout" Padding="12,6" VerticalAlignment="Center" />
+              <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                <TextBlock Text="Who made this" Style="{StaticResource App.SettingTitle}" />
+                <TextBlock Text="Credits, licence, and where to send feedback." Style="{StaticResource App.SettingHint}" />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+
+          <TextBlock Text="Your data" Style="{StaticResource App.SettingGroup}" />
+          <Border Style="{StaticResource App.SettingCard}">
+            <DockPanel>
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="Back up..." Command="{Binding ExportCommand}" Padding="12,6" Margin="0,0,8,0" />
+                <Button Content="Restore..." Command="{Binding ImportCommand}" Padding="12,6" />
+              </StackPanel>
+              <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                <TextBlock Text="Backup" Style="{StaticResource App.SettingTitle}" />
+                <TextBlock Style="{StaticResource App.SettingHint}" TextWrapping="Wrap"
+                           Text="{Binding Status, TargetNullValue='Profiles, Base, Created items, and settings in one file.'}" />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+          <Border Style="{StaticResource App.SettingCard}" Opacity="0.6">
+            <DockPanel>
+              <CheckBox DockPanel.Dock="Right" IsEnabled="False" VerticalAlignment="Center" />
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Sync between PCs" Style="{StaticResource App.SettingTitle}" />
+                <TextBlock Text="Coming later. Profiles stay on this PC for now." Style="{StaticResource App.SettingHint}" />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
+  </TabControl>
+</Window>

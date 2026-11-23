@@ -27,16 +27,16 @@ Two hard constraints follow from that:
 ## Project layout
 
 ```
-StartupProfiles.slnx
-  src/StartupProfiles.Core   net10.0            portable, no Windows Forms/ASP.NET deps
+Loadout.slnx
+  src/Loadout.Core   net10.0            portable, no Windows Forms/ASP.NET deps
     Models/        Profile, ProfileAction, ActionType, FailureBehaviour, conditions
     Actions/       one handler per action type (launch, url, script, service, ...)
     Execution/     ProfileRunner: ordering, delays, wait-for, failure handling, history
-    Storage/       load/save profiles + config as JSON under %APPDATA%\StartupProfiles
+    Storage/       load/save profiles + config as JSON under %APPDATA%\Loadout
     Windows/       startup registration, process handling, services, elevation helpers
     Integration/   registration-request parsing + the confirmation model
-  src/StartupProfiles.Windows net10.0-windows    Windows adapters behind the Core seams
-  src/StartupProfiles.App    net10.0-windows    WinExe host (WPF UI + tray + loopback API)
+  src/Loadout.Windows net10.0-windows    Windows adapters behind the Core seams
+  src/Loadout.App    net10.0-windows    WinExe host (WPF UI + tray + loopback API)
     Program.cs     STA entry point (see file for boot sequence)
     Api/           loopback-only ASP.NET Core endpoints (for agents / external tools)
     Tray/          tray icon + menu on DotNetLib.Tray; TrayMenuModel holds the menu's contents
@@ -45,7 +45,7 @@ StartupProfiles.slnx
     Discovery/     the "New startup apps" window
     Updates/       UpdateCoordinator: check, download, verify, install (DotNetLib.Core.Updating)
     Themes/        light/dark/high-contrast token dictionaries + ThemeManager over DotNetLib's theme engine
-  installer/       Inno Setup script + build-installer.ps1 (the release's StartupProfiles-Setup-<v>.exe)
+  installer/       Inno Setup script + build-installer.ps1 (the release's Loadout-Setup-<v>.exe)
 ```
 
 `Core` targets plain `net10.0` so the execution engine and models stay unit-testable and
@@ -107,8 +107,17 @@ A profile is therefore a small declarative workflow, e.g. *Work*:
 
 ## Storage
 
-Profiles and app config live as plain JSON under `%APPDATA%\StartupProfiles` - no database
-engine, nothing leaves the machine. A full backup moves a setup between computers (see Data safety).
+Profiles and app config live as plain JSON under `%APPDATA%\Loadout` - no database
+engine, nothing leaves the machine. Before the rename the folder was `%APPDATA%\StartupProfiles`:
+`Storage/DataMigration` copies it on the first start (staging folder, SHA-256 check, rename into
+place), leaves the old folder with a `MOVED-TO-LOADOUT.txt` note, and retries on the next start if the
+copy failed. A named mutex keeps two processes from migrating at once, and the copy waits while the old
+app is still running (it holds the old single-instance lock). While the copy failed or waits, the app runs
+from the old folder. Only `profiles.json`, `library.json` and `base.json` count as data in the new folder,
+so a stray `error.log` cannot hide the old data (the stray folder is kept as `Loadout.before-migration`).
+Files the old app writes to its folder after the copy are saved under `recovered-from-startupprofiles`
+in the new folder and logged to `error.log`, never overwritten or dropped. `endpoint.json` is also written to the
+old folder for as long as it exists (deprecated). A full backup moves a setup between computers (see Data safety).
 (TOML is a possible alternative; JSON is the default to match Treeline.)
 
 ### Data safety
@@ -116,7 +125,7 @@ engine, nothing leaves the machine. A full backup moves a setup between computer
 The data contract, per CodePrint's data lifecycle rules:
 
 - **Owner and store.** The local user owns everything. The running app is the single writer of its JSON
-  files in `%APPDATA%\StartupProfiles`; one-shot `register` processes write through its loopback API.
+  files in `%APPDATA%\Loadout`; one-shot `register` processes write through its loopback API.
   Files are written atomically (temp file, then move).
 - **Identity.** Profiles have stable slug ids (`work`); library items have stable ids that profile steps
   link to (`LibraryItemId`). Run history timestamps are `DateTimeOffset` with the local offset.
@@ -153,24 +162,24 @@ stays portable-friendly and testable.
 
 ## Implementation status
 
-Milestone 1 implemented `StartupProfiles.Core` (net10.0); Milestone 2 added `StartupProfiles.Windows`
-(net10.0-windows) adapters; Milestone 3 built the `StartupProfiles.App` host (loopback API + tray).
+Milestone 1 implemented `Loadout.Core` (net10.0); Milestone 2 added `Loadout.Windows`
+(net10.0-windows) adapters; Milestone 3 built the `Loadout.App` host (loopback API + tray).
 Each has an xUnit project under `tests/` wired into the solution.
 
 Project layout now:
 
 ```
-src/StartupProfiles.Core      net10.0            models, actions, execution, storage (portable seams)
-src/StartupProfiles.Windows   net10.0-windows    Windows adapters behind the Core seams
-src/StartupProfiles.App       net10.0-windows    WinExe host: loopback API + endpoint.json + tray
-tests/StartupProfiles.Core.Tests        net10.0
-tests/StartupProfiles.Windows.Tests     net10.0-windows
-tests/StartupProfiles.App.Tests         net10.0-windows
+src/Loadout.Core      net10.0            models, actions, execution, storage (portable seams)
+src/Loadout.Windows   net10.0-windows    Windows adapters behind the Core seams
+src/Loadout.App       net10.0-windows    WinExe host: loopback API + endpoint.json + tray
+tests/Loadout.Core.Tests        net10.0
+tests/Loadout.Windows.Tests     net10.0-windows
+tests/Loadout.App.Tests         net10.0-windows
 ```
 
 Platform code stays out of the portable Core: Core owns the seam interfaces
 (`Core/Windows/IStartupRegistration`, `IServiceController`, `IVpnConnector`) and the handlers that use
-them; `StartupProfiles.Windows` owns the concrete adapters.
+them; `Loadout.Windows` owns the concrete adapters.
 
 Built in Core:
 
@@ -183,14 +192,14 @@ Built in Core:
 - **Execution/** - `ProfileRunner` walks actions in order, applies each action's lead `Delay`,
   dispatches to the handler, honours `FailureBehaviour` (continue / stop / retry with `RetryCount`),
   and records an `ActionExecution` per action into a `ProfileRun`.
-- **Storage/** - JSON persistence under `%APPDATA%\StartupProfiles` (`profiles.json`, `config.json`,
+- **Storage/** - JSON persistence under `%APPDATA%\Loadout` (`profiles.json`, `config.json`,
   `history.json`) via `ProfileStore` / `ConfigStore` / `HistoryStore`. A fresh install seeds the six
   default profiles. Enums persist as names; writes are atomic (temp file + move).
 - **Windows/** - the platform seam interfaces `IStartupRegistration`, `IServiceController`,
   `IVpnConnector`, plus the `StartServiceHandler` / `StartVpnHandler` action handlers that depend on
   them (in `Actions/`).
 
-Built in StartupProfiles.Windows (adapters):
+Built in Loadout.Windows (adapters):
 
 - `WindowsStartupRegistration` - HKCU `...\CurrentVersion\Run` value (per-user, no elevation).
 - `WindowsServiceController` - starts a service via `System.ServiceProcess.ServiceController`, waiting
@@ -200,7 +209,7 @@ Built in StartupProfiles.Windows (adapters):
 - `WindowsRuntime.CreateActionRegistry()` - the Windows composition root wiring the real launcher plus
   service/VPN adapters into `ActionHandlerRegistry.CreateDefault`.
 
-Built in StartupProfiles.App (host):
+Built in Loadout.App (host):
 
 - **Program** - STA entry point, single-instance mutex. Builds a loopback-only ASP.NET Core host
   (Kestrel bound to `127.0.0.1`), starts it, writes `endpoint.json`, then runs the tray (or waits
@@ -216,7 +225,7 @@ Built in StartupProfiles.App (host):
   in Core so they are unit-testable; the host and tray both use the executor as the single source of
   truth for running a profile.
 
-Built in StartupProfiles.App (WPF UI - Milestone 4):
+Built in Loadout.App (WPF UI - Milestone 4):
 
 - **Launcher** - the login selector (`LauncherWindow` + `LauncherViewModel`): a grid of profile tiles,
   number-key and Escape shortcuts, "Edit profiles" and "Close". Shown at startup; picking a profile
@@ -232,12 +241,12 @@ Built in StartupProfiles.App (WPF UI - Milestone 4):
   dictionary (Light, Dark, or HighContrast.xaml, which maps to system colors); `Controls.xaml` is merged
   last so the app's control styles win over WPF UI's.
 - **Updates** - `Updates/UpdateCoordinator`: `GitHubReleaseSource` finds the latest release's
-  `StartupProfiles-Setup-*.exe`, `ReleaseVersion` decides if it is newer, the installer is downloaded to
-  `%TEMP%\StartupProfiles\updates`, checked against the `.sha256` published next to it, and started with
+  `Loadout-Setup-*.exe`, `ReleaseVersion` decides if it is newer, the installer is downloaded to
+  `%TEMP%\Loadout\updates`, checked against the `.sha256` published next to it, and started with
   `/SILENT`; the app exits only after the installer started. A daily automatic check (setting
   `checkForUpdates`, last run in `lastUpdateCheck`) and Settings > Updates or the tray drive it. The
   release page is the manual path.
-- **Installer** - `installer/StartupProfiles.iss` (per user, `%LOCALAPPDATA%\Programs\StartupProfiles`,
+- **Installer** - `installer/Loadout.iss` (per user, `%LOCALAPPDATA%\Programs\Loadout`,
   the same folder as `install.ps1`). It registers login and the protocol through the app's maintenance
   commands, offers the startup takeover on a first install only, relaunches the app after a silent
   update, and on uninstall stops the app, restores the startup apps, and removes its registrations.
@@ -269,7 +278,7 @@ Deviations and decisions worth noting:
   the WPF markup-compile helper, which is not installed here; roll-forward still runs it on newer
   patches. Revisit once the box has a matching runtime.
 
-Built in Core/Integration and StartupProfiles.App/Integration (Milestone 5):
+Built in Core/Integration and Loadout.App/Integration (Milestone 5):
 
 - **Core/Integration** - `RegistrationRequest`, `RegistrationRequestParser` (one field mapping shared
   by the protocol URI and the CLI form), and `IProfileRegistrar` / `ProfileRegistrar` (appends a launch
@@ -284,7 +293,7 @@ Built in Core/Integration and StartupProfiles.App/Integration (Milestone 5):
 - **Api** - `POST /api/register` applies a request via `IProfileRegistrar` behind the same two-phase
   confirmation token as delete.
 
-Registering the `startupprofiles://` scheme with Windows is done by the installer via
+Registering the `loadout://` scheme with Windows is done by the installer via
 `IProtocolRegistration` / `WindowsProtocolRegistration` (see below). Still open on the contract:
 `supportsMinimized` is carried as metadata only (launch-minimized is not yet an action field). The
 Windows adapters carry platform tests only for the registry round-trips (startup + protocol); service
@@ -292,14 +301,14 @@ and VPN control are thin wrappers over the OS and are exercised manually. WPF wi
 view-model tests, not UI automation.
 
 Installer (`install/install.ps1`, `uninstall.ps1`): a per-user PowerShell installer. It publishes the
-App, installs it to `%LOCALAPPDATA%\Programs\StartupProfiles`, adds a Start Menu shortcut, and installs
+App, installs it to `%LOCALAPPDATA%\Programs\Loadout`, adds a Start Menu shortcut, and installs
 the agent skill; login and protocol registration are delegated to the app's own maintenance commands
-(`StartupProfiles.exe --register-login` / `--register-protocol`), which run the `IStartupRegistration`
+(`Loadout.exe --register-login` / `--register-protocol`), which run the `IStartupRegistration`
 and `IProtocolRegistration` adapters so the registry formats stay owned by the app. `App/Maintenance`
 holds the command parse/dispatch (`MaintenanceCommand` / `MaintenanceCommands`).
 
 Startup takeover: `Core/Windows/IStartupAppCatalog` is the seam for reading and switching the OS's own
-startup entries; `StartupProfiles.Windows/WindowsStartupAppCatalog` reads the same sources as Task
+startup entries; `Loadout.Windows/WindowsStartupAppCatalog` reads the same sources as Task
 Manager (per-user and all-users `Run` keys, both Startup folders, packaged startup tasks) and switches
 per-user entries via the `StartupApproved` flags / task `State`, never deleting a registration.
 `Core/Startup/StartupTakeover` implements the install default - move every enabled, switchable startup

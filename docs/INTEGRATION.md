@@ -1,33 +1,36 @@
-# Startup Profiles integration contract
+# Loadout integration contract
 
 > Implemented in Milestone 5. Both transports (protocol URI and CLI), the loopback API path, and
-> the trusted confirmation window exist; see [Implementation](#implementation). Registering the
-> `startupprofiles://` scheme with Windows is the installer's job (a later milestone), so today the
-> protocol form is exercised by passing the URI to `StartupProfiles.exe` directly.
+> the trusted confirmation window exist; see [Implementation](#implementation). The installer
+> registers the `loadout://` scheme with Windows.
+>
+> Loadout was called Startup Profiles before. The old `startupprofiles://` scheme is still registered
+> and parsed the same way, so links that other apps already use keep working. Use `loadout://` in
+> new code. The old scheme is deprecated and will be dropped in a later release.
 
-Startup Profiles exposes a small **public integration contract** so other applications can
+Loadout exposes a small **public integration contract** so other applications can
 *request* to be added to a startup profile. This is aimed at CodePrint-convention Windows
 apps but is not specific to them.
 
 The core distinction:
 
-> The external application **requests** registration. Startup Profiles **owns** the decision
+> The external application **requests** registration. Loadout **owns** the decision
 > and the configuration UI.
 
-An application effectively says *"I support Startup Profiles - would you like to add me?"*
+An application effectively says *"I support Loadout - would you like to add me?"*
 It never silently adds itself.
 
 ## Registration flow
 
 1. User installs or first launches an application.
-2. The application detects that Startup Profiles is installed.
-3. It invokes the Startup Profiles registration contract (protocol or CLI).
-4. Startup Profiles opens **its own trusted** registration window.
+2. The application detects that Loadout is installed.
+3. It invokes the Loadout registration contract (protocol or CLI).
+4. Loadout opens **its own trusted** registration window.
 5. The window shows the requesting application's information.
 6. The user chooses where it belongs: the **Base** (which runs before every profile) / Work /
    Dev / School / Games / Chill / Everything / multiple destinations / **Just recognize** /
    **Don't add**.
-7. Startup Profiles stores the configuration.
+7. Loadout stores the configuration.
 8. The requesting application receives a success / cancelled result if appropriate.
 
 **Just recognize** is the third answer to "where does this belong?": the app is kept in the global
@@ -39,13 +42,13 @@ Every registration goes through the library, so an app added to a profile is edi
 Prefer a Windows-native custom protocol:
 
 ```
-startupprofiles://register?appId=...&name=...&target=...&icon=...&args=...&publisher=...&suggestedProfile=...
+loadout://register?appId=...&name=...&target=...&icon=...&args=...&publisher=...&suggestedProfile=...
 ```
 
 and/or a small CLI:
 
 ```
-StartupProfiles.exe register --app-id ... --name ... --target ... [--icon ...] [--args ...] \
+Loadout.exe register --app-id ... --name ... --target ... [--icon ...] [--args ...] \
                              [--publisher ...] [--suggested-profile Dev] [--supports-minimized]
 ```
 
@@ -73,45 +76,44 @@ External applications must **not** be able to:
 - modify existing profiles without consent,
 - remove other applications,
 - automatically assign themselves to `Everything` or to the base,
-- execute arbitrary Startup Profiles configuration changes.
+- execute arbitrary Loadout configuration changes.
 
-Every registration results in a **Startup Profiles-owned confirmation UI**. The requesting
+Every registration results in a **Loadout-owned confirmation UI**. The requesting
 app supplies metadata and a request - not configuration authority. A suggested profile is a
 hint; the user always chooses, and neither `Everything` nor the base is ever auto-selected.
 
 ## CodePrint convention
 
-When designing a CodePrint Windows application, consider Startup Profiles integration:
+When designing a CodePrint Windows application, consider Loadout integration:
 
-- If Startup Profiles is installed, the app may expose **Add to Startup Profiles**, e.g.
-  under **Settings -> Startup -> Add to Startup Profiles**, or offered once during setup.
-- The app must work completely normally when Startup Profiles is **not** installed.
+- If Loadout is installed, the app may expose **Add to Loadout**, e.g.
+  under **Settings -> Startup -> Add to Loadout**, or offered once during setup.
+- The app must work completely normally when Loadout is **not** installed.
 - Integration is therefore an **optional capability, never a hard dependency**.
 
 ## Implementation
 
 The contract is realised in two layers:
 
-- **`StartupProfiles.Core/Integration`** (portable): `RegistrationRequest` is the metadata an app
+- **`Loadout.Core/Integration`** (portable): `RegistrationRequest` is the metadata an app
   supplies; `RegistrationTargets` is where the user chose to put it (profiles, the base, or neither);
   `RegistrationRequestParser` parses both transports through one shared field mapping and validation;
   `ProfileRegistrar` applies an approved request by keeping the app in the global library and appending
   an action linked to that item to each chosen destination (idempotent per target, never creating
   profiles or touching unlisted ones). A profile that includes the base is skipped when the base
   already starts the app, so it is never launched twice.
-- **`StartupProfiles.App/Integration`** (host): the entry points and the trusted window.
+- **`Loadout.App/Integration`** (host): the entry points and the trusted window.
 
 Three ways to reach it:
 
-1. **Protocol** - `StartupProfiles.exe "startupprofiles://register?appId=...&name=...&target=..."`.
-   Registering the scheme with Windows is deferred to the installer; until then, invoke the exe with
-   the URI directly.
-2. **CLI** - `StartupProfiles.exe register --app-id ... --name ... --target ... [--args ...]
+1. **Protocol** - `Loadout.exe "loadout://register?appId=...&name=...&target=..."`.
+   The installer registers the scheme with Windows (`startupprofiles://` too, as a deprecated alias).
+2. **CLI** - `Loadout.exe register --app-id ... --name ... --target ... [--args ...]
    [--publisher ...] [--suggested-profile Dev] [--supports-minimized]`. A value that itself starts
    with `--` (launch arguments) can use the `--args=--flag` form.
 3. **Loopback API** - `POST /api/register` for local agents (see [API.md](API.md)).
 
-The protocol and CLI forms open a **Startup Profiles-owned** confirmation window: it shows the
+The protocol and CLI forms open a **Loadout-owned** confirmation window: it shows the
 requesting app's icon, name, publisher, and target, and a scrolling checklist of destinations - the
 base first, then every profile, each with what it already starts. A `suggestedProfile` only pre-ticks
 that one profile as a hint - never `Everything`, never the base - and the user must click **Add**, or

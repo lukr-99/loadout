@@ -1,0 +1,14 @@
+using Loadout.Core.Startup;
+
+namespace Loadout.Core.Storage;
+
+/// <summary>
+/// Persistence for the startup entries Loadout switched off (startup-takeover.json), so uninstall
+/// can switch exactly those back on.
+/// </summary>
+public interface IStartupTakeoverStore
+{
+    IReadOnlyList<StartupEntry> Load();
+    void Save(IReadOnlyList<StartupEntry> entries);
+    void Clear();
+}

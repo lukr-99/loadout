@@ -5,13 +5,13 @@
 Run from the repository root:
 
 ```powershell
-dotnet format StartupProfiles.slnx --verify-no-changes
-dotnet build StartupProfiles.slnx -c Release
-dotnet test StartupProfiles.slnx -c Release
+dotnet format Loadout.slnx --verify-no-changes
+dotnet build Loadout.slnx -c Release
+dotnet test Loadout.slnx -c Release
 ```
 
 `dotnet build` treats warnings as errors (see `Directory.Build.props`), so a clean build means zero
-warnings. The Windows platform tests (`StartupProfiles.Windows.Tests`) only assert on Windows; on
+warnings. The Windows platform tests (`Loadout.Windows.Tests`) only assert on Windows; on
 other hosts they no-op rather than fail.
 
 ## Change shape
