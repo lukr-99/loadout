@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Publish Startup Profiles self-contained and compile the per-user Inno Setup installer.
+    Publish Loadout self-contained and compile the per-user Inno Setup installer.
 
 .DESCRIPTION
     Adapted from CodePrint's templates/dotnet/installer/build-installer.ps1. The version comes from
     VersionPrefix in Directory.Build.props unless -Version is given. Output:
-    installer/dist/StartupProfiles-Setup-<version>.exe and, unless -NoChecksum, its .sha256 next to it
+    installer/dist/Loadout-Setup-<version>.exe and, unless -NoChecksum, its .sha256 next to it
     ("<hash>  <file name>", the format the in-app updater checks). The release workflow passes
     -NoChecksum, signs the setup, and only then writes the checksum, so the hash matches the signed file.
     installer/publish and installer/dist are ignored by Git.
@@ -62,7 +62,7 @@ if ($PublishDir) {
     if (Test-Path -LiteralPath $publish) { Remove-Item -LiteralPath $publish -Recurse -Force }
     [System.IO.Directory]::CreateDirectory($publish) | Out-Null
 
-    Write-Host "Publishing Startup Profiles $Version ($Configuration, $Runtime)..." -ForegroundColor Cyan
+    Write-Host "Publishing Loadout $Version ($Configuration, $Runtime)..." -ForegroundColor Cyan
     & dotnet publish $project -c $Configuration -r $Runtime --self-contained true `
         -p:PublishSingleFile=false -p:Version=$Version -o $publish --nologo
     if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed.' }
@@ -75,7 +75,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Inno Setup compilation failed.' }
 # The setup holds the files now. Drop a publish folder this script made: CodePrint's validator scans it.
 if (-not $PublishDir) { Remove-Item -LiteralPath $publish -Recurse -Force }
 
-$setup = Join-Path $dist "StartupProfiles-Setup-$Version.exe"
+$setup = Join-Path $dist "Loadout-Setup-$Version.exe"
 if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw "Expected installer was not produced: $setup" }
 
 if (-not $NoChecksum) {

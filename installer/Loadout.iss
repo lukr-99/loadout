@@ -1,13 +1,15 @@
-; Per-user Inno Setup 6 installer for Startup Profiles, from CodePrint's templates/dotnet/installer.
+; Per-user Inno Setup 6 installer for Loadout (formerly Startup Profiles), from CodePrint's templates/dotnet/installer.
 ; build-installer.ps1 supplies the version and the publish folder. It installs to the same folder as
 ; install/install.ps1, so either one upgrades the other. The in-app updater runs this setup with
 ; /SILENT; setup then closes the running app, replaces it, and starts it again.
 
-#define MyAppName "Startup Profiles"
+#define MyAppName "Loadout"
 #define MyAppPublisher "Lukas Krejci"
 #define MyAppExeName "Loadout.exe"
-#define MyAppProcessName "StartupProfiles"
-#define MyArtifactName "StartupProfiles"
+#define OldAppExeName "StartupProfiles.exe"
+#define OldAppFolderName "StartupProfiles"
+#define MyAppProcessName "Loadout"
+#define MyArtifactName "Loadout"
 #define MyAppUrl "https://github.com/lukr-99/startup-profiles"
 
 #ifndef MyAppVersion
@@ -29,8 +31,11 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppUrl}
 AppSupportURL={#MyAppUrl}/issues
 AppUpdatesURL={#MyAppUrl}/releases
-; Same place install.ps1 uses, so the two never leave two copies behind.
-DefaultDirName={localappdata}\Programs\StartupProfiles
+; Same place install.ps1 uses, so the two never leave two copies behind. AppId stays the same as the old
+; Startup Profiles installer, so this setup upgrades it in place. UsePreviousAppDir=no sends the files to the
+; new folder instead of the old one; [InstallDelete] removes the old folder.
+DefaultDirName={localappdata}\Programs\Loadout
+UsePreviousAppDir=no
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
@@ -46,7 +51,8 @@ SolidCompression=yes
 WizardStyle=modern
 CloseApplications=yes
 RestartApplications=no
-CloseApplicationsFilter={#MyAppExeName}
+; The old exe is closed too, so an upgrade over a running Startup Profiles works.
+CloseApplicationsFilter={#MyAppExeName},{#OldAppExeName}
 VersionInfoVersion={#MyVersionInfoVersion}
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoProductName={#MyAppName}
@@ -64,16 +70,16 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 ; The agent skill, as install.ps1 installs it.
-Source: "..\skills\startup-profiles\*"; DestDir: "{%USERPROFILE}\.claude\skills\startup-profiles"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "..\skills\loadout\*"; DestDir: "{%USERPROFILE}\.claude\skills\loadout"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Comment: "Windows Startup Profiles"
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Comment: "Loadout"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
 ; The app owns its registry formats (see ARCHITECTURE.md), so registration runs through its own commands.
-Filename: "{app}\{#MyAppExeName}"; Parameters: "--register-login"; Flags: runhidden waituntilterminated; StatusMsg: "Starting Startup Profiles at login..."
-Filename: "{app}\{#MyAppExeName}"; Parameters: "--register-protocol"; Flags: runhidden waituntilterminated; StatusMsg: "Registering startupprofiles:// links..."
+Filename: "{app}\{#MyAppExeName}"; Parameters: "--register-login"; Flags: runhidden waituntilterminated; StatusMsg: "Starting Loadout at login..."
+Filename: "{app}\{#MyAppExeName}"; Parameters: "--register-protocol"; Flags: runhidden waituntilterminated; StatusMsg: "Registering loadout:// links..."
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--take-over-startup"; Flags: runhidden waituntilterminated; Tasks: takeover; StatusMsg: "Moving startup apps into the Everything profile..."
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
 ; A silent run is the in-app updater: start the updated app again.
@@ -90,17 +96,26 @@ Filename: "{app}\{#MyAppExeName}"; Parameters: "--restore-startup"; Flags: runhi
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--unregister-login"; Flags: runhidden waituntilterminated; RunOnceId: "UnregisterLogin"
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--unregister-protocol"; Flags: runhidden waituntilterminated; RunOnceId: "UnregisterProtocol"
 
-[UninstallDelete]
+[InstallDelete]
+; An upgrade over Startup Profiles: remove the old program folder, shortcuts and agent skill. The data folder
+; %APPDATA%\StartupProfiles is not touched; the app copies it to %APPDATA%\Loadout on its first start.
+Type: filesandordirs; Name: "{localappdata}\Programs\{#OldAppFolderName}"
+Type: files; Name: "{autoprograms}\Startup Profiles.lnk"
+Type: files; Name: "{autodesktop}\Startup Profiles.lnk"
 Type: filesandordirs; Name: "{%USERPROFILE}\.claude\skills\startup-profiles"
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{%USERPROFILE}\.claude\skills\loadout"
 
 [Code]
 var
   FirstInstall: Boolean;
 
-{ Decided before any file is copied: true when the app is not in the install folder yet. }
+{ Decided before any file is copied: true when neither Loadout nor Startup Profiles is installed yet. }
 function InitializeSetup(): Boolean;
 begin
-  FirstInstall := not FileExists(ExpandConstant('{localappdata}\Programs\StartupProfiles\{#MyAppExeName}'));
+  FirstInstall := not FileExists(ExpandConstant('{localappdata}\Programs\Loadout\{#MyAppExeName}')) and
+                  not FileExists(ExpandConstant('{localappdata}\Programs\{#OldAppFolderName}\{#OldAppExeName}'));
   Result := True;
 end;
 

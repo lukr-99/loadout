@@ -1,20 +1,20 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Uninstall Windows Startup Profiles for the current user.
+    Uninstall Loadout (and the old Startup Profiles, if still installed) for the current user.
 
 .DESCRIPTION
     Stops any running instance, switches back on the Windows startup apps the installer took over,
-    removes the login registration and the startupprofiles:// protocol, deletes the installed program,
+    removes the login registration and the loadout:// and startupprofiles:// protocols, deletes the installed program,
     the Start Menu shortcut, and the installed agent skill. With -PurgeData it also deletes
-    %APPDATA%\StartupProfiles (profiles, config, history).
+    %APPDATA%\Loadout and the old %APPDATA%\StartupProfiles (profiles, config, history).
 
     Re-enabling startup apps runs through the app (Loadout.exe --restore-startup) while it is
     still installed. Registry keys are removed directly (rather than via the app) so the rest of
     uninstall works even if the executable is already gone.
 
 .PARAMETER PurgeData
-    Also delete %APPDATA%\StartupProfiles (your profiles, config, and history).
+    Also delete %APPDATA%\Loadout and %APPDATA%\StartupProfiles (your profiles, config, and history).
 
 .EXAMPLE
     .\install\uninstall.ps1
@@ -28,19 +28,24 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$InstallDir = Join-Path $env:LOCALAPPDATA 'Programs\StartupProfiles'
+$InstallDir = Join-Path $env:LOCALAPPDATA 'Programs\Loadout'
 $ExePath    = Join-Path $InstallDir 'Loadout.exe'
-$Shortcut   = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup Profiles.lnk'
-$SkillDir   = Join-Path $env:USERPROFILE '.claude\skills\startup-profiles'
-$TakeoverRecord = Join-Path $env:APPDATA 'StartupProfiles\startup-takeover.json'
+$OldInstallDir = Join-Path $env:LOCALAPPDATA 'Programs\StartupProfiles'
+$StartMenu  = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'
+$Shortcuts  = @((Join-Path $StartMenu 'Loadout.lnk'), (Join-Path $StartMenu 'Startup Profiles.lnk'))
+$SkillDirs  = @((Join-Path $env:USERPROFILE '.claude\skills\loadout'), (Join-Path $env:USERPROFILE '.claude\skills\startup-profiles'))
+$DataDirs   = @((Join-Path $env:APPDATA 'Loadout'), (Join-Path $env:APPDATA 'StartupProfiles'))
+# The record lives in the new data folder; before the first start under the new name it is still in the old one.
+$TakeoverRecord = @($DataDirs | ForEach-Object { Join-Path $_ 'startup-takeover.json' } | Where-Object { Test-Path $_ }) | Select-Object -First 1
 $RunKey     = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 $ApprovedRunKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run'
-$ProtocolKey = 'HKCU:\Software\Classes\startupprofiles'
+$ProtocolKeys = @('HKCU:\Software\Classes\loadout', 'HKCU:\Software\Classes\startupprofiles')
+$RunValueNames = @('Loadout', 'StartupProfiles')
 
 function Write-Step($message) { Write-Host "==> $message" -ForegroundColor Cyan }
 
 function Restore-StartupApps {
-    if (-not (Test-Path $TakeoverRecord)) { return }
+    if (-not $TakeoverRecord) { return }
     Write-Step "Switching taken-over startup apps back on"
 
     if (Test-Path $ExePath) {
@@ -63,9 +68,9 @@ function Restore-StartupApps {
     Write-Warning "Could not switch these startup apps back on; re-enable them in Task Manager > Startup apps: $names"
 }
 
-Write-Host "Uninstalling Windows Startup Profiles..." -ForegroundColor Green
+Write-Host "Uninstalling Loadout..." -ForegroundColor Green
 
-Get-Process -Name 'StartupProfiles' -ErrorAction SilentlyContinue | ForEach-Object {
+Get-Process -Name 'Loadout', 'StartupProfiles' -ErrorAction SilentlyContinue | ForEach-Object {
     Write-Step "Stopping running instance (pid $($_.Id))"
     $_ | Stop-Process -Force
 }
@@ -74,31 +79,34 @@ Start-Sleep -Milliseconds 400
 Restore-StartupApps
 
 Write-Step "Removing login registration"
-if (Get-ItemProperty -Path $RunKey -Name 'StartupProfiles' -ErrorAction SilentlyContinue) {
-    Remove-ItemProperty -Path $RunKey -Name 'StartupProfiles'
-}
-if (Get-ItemProperty -Path $ApprovedRunKey -Name 'StartupProfiles' -ErrorAction SilentlyContinue) {
-    Remove-ItemProperty -Path $ApprovedRunKey -Name 'StartupProfiles'
+foreach ($name in $RunValueNames) {
+    if (Get-ItemProperty -Path $RunKey -Name $name -ErrorAction SilentlyContinue) {
+        Remove-ItemProperty -Path $RunKey -Name $name
+    }
+    if (Get-ItemProperty -Path $ApprovedRunKey -Name $name -ErrorAction SilentlyContinue) {
+        Remove-ItemProperty -Path $ApprovedRunKey -Name $name
+    }
 }
 
-Write-Step "Removing startupprofiles:// protocol"
-if (Test-Path $ProtocolKey) { Remove-Item -Path $ProtocolKey -Recurse -Force }
+Write-Step "Removing loadout:// and startupprofiles:// protocols"
+foreach ($key in $ProtocolKeys) { if (Test-Path $key) { Remove-Item -Path $key -Recurse -Force } }
 
 Write-Step "Removing Start Menu shortcut"
-if (Test-Path $Shortcut) { Remove-Item -Path $Shortcut -Force }
+foreach ($shortcut in $Shortcuts) { if (Test-Path $shortcut) { Remove-Item -Path $shortcut -Force } }
 
 Write-Step "Removing agent skill"
-if (Test-Path $SkillDir) { Remove-Item -Path $SkillDir -Recurse -Force }
+foreach ($dir in $SkillDirs) { if (Test-Path $dir) { Remove-Item -Path $dir -Recurse -Force } }
 
 Write-Step "Removing installed program"
-if (Test-Path $InstallDir) { Remove-Item -Path $InstallDir -Recurse -Force }
+foreach ($dir in @($InstallDir, $OldInstallDir)) { if (Test-Path $dir) { Remove-Item -Path $dir -Recurse -Force } }
 
 if ($PurgeData) {
-    $dataDir = Join-Path $env:APPDATA 'StartupProfiles'
-    Write-Step "Purging data at $dataDir"
-    if (Test-Path $dataDir) { Remove-Item -Path $dataDir -Recurse -Force }
+    foreach ($dataDir in $DataDirs) {
+        Write-Step "Purging data at $dataDir"
+        if (Test-Path $dataDir) { Remove-Item -Path $dataDir -Recurse -Force }
+    }
 }
 
 Write-Host ""
 Write-Host "Uninstalled." -ForegroundColor Green
-if (-not $PurgeData) { Write-Host "Your profiles remain in %APPDATA%\StartupProfiles (use -PurgeData to remove them)." }
+if (-not $PurgeData) { Write-Host "Your profiles remain in %APPDATA%\Loadout (use -PurgeData to remove them)." }
