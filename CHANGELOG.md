@@ -18,6 +18,9 @@ release is a Git tag `vX.Y.Z` that matches it.
   `skills/loadout`) reads the new path first. The old path is deprecated. The `startupprofiles://`
   scheme still works next to the new `loadout://`. Releases also attach the installer as
   `StartupProfiles-Setup-<version>.exe` so installs of the old name can update themselves.
+- The installer stops a running Startup Profiles before it replaces it, and refuses to go on if it
+  cannot. The data copy waits while the old app runs, never runs twice at once, and keeps anything the
+  old app wrote to its folder afterwards. Your choice to not start at login survives the rename.
 - New About window (tray menu, and Settings in the configuration window): who made the app, a feedback
   invitation with Instagram, GitHub and Issues links, the app's facts, and credits.
 - A profile run that throws no longer leaves the launcher stuck or the configuration window on

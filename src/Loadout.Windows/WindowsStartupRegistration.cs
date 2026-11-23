@@ -31,6 +31,12 @@ public sealed class WindowsStartupRegistration : IStartupRegistration
         _approvedKeyPath = approvedKeyPath ?? DefaultApprovedKeyPath;
     }
 
+    public bool HasEntry()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(_runKeyPath);
+        return key?.GetValue(_valueName) is not null;
+    }
+
     public bool IsEnabled()
     {
         using var key = Registry.CurrentUser.OpenSubKey(_runKeyPath);

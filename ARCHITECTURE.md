@@ -111,7 +111,12 @@ Profiles and app config live as plain JSON under `%APPDATA%\Loadout` - no databa
 engine, nothing leaves the machine. Before the rename the folder was `%APPDATA%\StartupProfiles`:
 `Storage/DataMigration` copies it on the first start (staging folder, SHA-256 check, rename into
 place), leaves the old folder with a `MOVED-TO-LOADOUT.txt` note, and retries on the next start if the
-copy failed. While it failed the app runs from the old folder. `endpoint.json` is also written to the
+copy failed. A named mutex keeps two processes from migrating at once, and the copy waits while the old
+app is still running (it holds the old single-instance lock). While the copy failed or waits, the app runs
+from the old folder. Only `profiles.json`, `library.json` and `base.json` count as data in the new folder,
+so a stray `error.log` cannot hide the old data (the stray folder is kept as `Loadout.before-migration`).
+Files the old app writes to its folder after the copy are saved under `recovered-from-startupprofiles`
+in the new folder and logged to `error.log`, never overwritten or dropped. `endpoint.json` is also written to the
 old folder for as long as it exists (deprecated). A full backup moves a setup between computers (see Data safety).
 (TOML is a possible alternative; JSON is the default to match Treeline.)
 

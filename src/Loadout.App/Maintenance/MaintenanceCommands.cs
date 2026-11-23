@@ -85,8 +85,8 @@ public static class MaintenanceCommands
         switch (command)
         {
             case MaintenanceCommand.RegisterLogin:
-                login.Enable($"\"{executablePath}\"");
-                legacyLogin.Disable(); // the old name's entry would start the old (removed) exe
+                // Enables the new entry (unless the user had switched the old one off), then removes the old one.
+                LegacyAutostart.Register(legacyLogin, login, $"\"{executablePath}\"");
                 break;
             case MaintenanceCommand.UnregisterLogin:
                 login.Disable();

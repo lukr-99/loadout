@@ -33,6 +33,7 @@ namespace Loadout.App;
 internal static class Program
 {
     private const string InstanceName = "Loadout";
+    private const string LegacyInstanceName = "StartupProfiles";
     private const string UpdatesHttpClient = "updates";
 
     [STAThread]
@@ -93,12 +94,28 @@ internal static class Program
 
     private static void MigrateData()
     {
-        var result = DataMigration.ForCurrentUser().Run();
-        if (result.Outcome != DataMigrationOutcome.Failed) return;
+        var result = DataMigration.ForCurrentUser(IsLegacyAppRunning).Run();
 
-        // Keep working from the old folder so the user still sees their profiles; the next start tries again.
-        LoadoutPaths.UseLegacyDirectoryForThisRun();
-        Diagnostics.CrashLog.Write("DataMigration", $"Could not copy the old data folder: {result.Error}");
+        if (result.Outcome is DataMigrationOutcome.Failed or DataMigrationOutcome.Deferred)
+        {
+            // Keep working from the old folder so the user still sees their profiles; the next start tries again.
+            LoadoutPaths.UseLegacyDirectoryForThisRun();
+            if (result.Outcome == DataMigrationOutcome.Failed)
+                Diagnostics.CrashLog.Write("DataMigration", $"Could not copy the old data folder: {result.Error}");
+            return;
+        }
+
+        if (result.RecoveredFiles is { Count: > 0 } recovered)
+            Diagnostics.CrashLog.Write("DataMigration",
+                $"Startup Profiles wrote {string.Join(", ", recovered)} in the old folder after the copy. " +
+                $"The files were saved under {DataMigration.RecoveredFolderName} in the data folder; nothing was overwritten.");
+    }
+
+    // The old app holds its single-instance lock while it runs. Taking it ourselves, then letting go, tells us.
+    private static bool IsLegacyAppRunning()
+    {
+        using var held = SingleInstance.TryAcquire(LegacyInstanceName);
+        return held is null;
     }
 
     // The old name's "start at login" entry would start a removed exe. Swap it for the new one, keeping

@@ -30,24 +30,24 @@ internal static class RuntimeInfo
         }
     }
 
-    /// <summary>The running host's URL: the new discovery file first, then the deprecated old one.</summary>
-    public static string? ReadUrl()
-    {
-        foreach (var file in LoadoutPaths.EndpointFilesToRead())
-        {
-            try
-            {
-                if (!File.Exists(file)) continue;
-                using var doc = JsonDocument.Parse(File.ReadAllText(file));
-                if (doc.RootElement.GetProperty("url").GetString() is { } url) return url;
-            }
-            catch (Exception ex) when (ex is IOException or JsonException or KeyNotFoundException or UnauthorizedAccessException)
-            {
-                // Try the next path.
-            }
-        }
+    /// <summary>
+    /// The URLs a running host may have: the new discovery file first, then the deprecated old one. A file
+    /// whose process is gone is skipped.
+    /// </summary>
+    public static IReadOnlyList<string> ReadUrls() =>
+        EndpointDiscovery.ReadUrls(LoadoutPaths.EndpointFilesToRead(), IsProcessAlive);
 
-        return null;
+    private static bool IsProcessAlive(int id)
+    {
+        try
+        {
+            using var process = System.Diagnostics.Process.GetProcessById(id);
+            return !process.HasExited;
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            return false;
+        }
     }
 
     public static void Delete()

@@ -12,6 +12,9 @@ public enum DataMigrationOutcome
     /// <summary>The old folder was copied to the new one and verified.</summary>
     Migrated,
 
+    /// <summary>The old app is still running and may still write to its folder, so nothing was copied. Try again next start.</summary>
+    Deferred,
+
     /// <summary>The copy failed. The new folder was not created and the old data is untouched.</summary>
     Failed,
 }

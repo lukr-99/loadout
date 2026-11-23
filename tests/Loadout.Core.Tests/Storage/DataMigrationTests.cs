@@ -133,4 +133,104 @@ public sealed class DataMigrationTests : IDisposable
 
         Assert.Equal(DataMigrationOutcome.AlreadyPresent, Create().Run().Outcome);
     }
+
+    [Fact]
+    public void Stray_files_in_the_new_folder_do_not_count_as_data_and_are_kept_aside()
+    {
+        WriteLegacy("profiles.json", "real");
+        Directory.CreateDirectory(Target);
+        File.WriteAllText(Path.Combine(Target, "error.log"), "boom");
+        File.WriteAllText(Path.Combine(Target, "config.json"), "{}");
+
+        var result = Create().Run();
+
+        Assert.Equal(DataMigrationOutcome.Migrated, result.Outcome);
+        Assert.Equal("real", File.ReadAllText(Path.Combine(Target, "profiles.json")));
+        var aside = Target + ".before-migration";
+        Assert.Equal("boom", File.ReadAllText(Path.Combine(aside, "error.log"))); // nothing is thrown away
+    }
+
+    [Fact]
+    public void A_new_folder_with_only_stray_files_and_no_old_folder_stays_as_it_is()
+    {
+        Directory.CreateDirectory(Target);
+        File.WriteAllText(Path.Combine(Target, "error.log"), "boom");
+
+        var result = Create().Run();
+
+        Assert.Equal(DataMigrationOutcome.NothingToMigrate, result.Outcome);
+        Assert.True(File.Exists(Path.Combine(Target, "error.log")));
+    }
+
+    [Fact]
+    public void Two_runs_at_the_same_time_migrate_once_and_neither_breaks_the_other()
+    {
+        for (var i = 0; i < 20; i++) WriteLegacy($"extra-{i}.json", new string('x', 50_000));
+        WriteLegacy("profiles.json", "real");
+
+        var results = Enumerable.Range(0, 4)
+            .Select(_ => Task.Run(() => Create().Run()))
+            .ToArray()
+            .Select(t => t.GetAwaiter().GetResult())
+            .ToList();
+
+        Assert.Equal(1, results.Count(r => r.Outcome == DataMigrationOutcome.Migrated));
+        Assert.Equal(3, results.Count(r => r.Outcome == DataMigrationOutcome.AlreadyPresent));
+        Assert.Equal("real", File.ReadAllText(Path.Combine(Target, "profiles.json")));
+        Assert.Equal(21, Directory.GetFiles(Target).Length);
+        Assert.False(Directory.Exists(Target + ".migrating"));
+    }
+
+    [Fact]
+    public void While_the_old_app_runs_nothing_is_copied_and_a_later_run_migrates()
+    {
+        WriteLegacy("profiles.json", "old");
+        var running = true;
+        DataMigration Deferring() => new(Legacy, Target, () => running);
+
+        var first = Deferring().Run();
+
+        Assert.Equal(DataMigrationOutcome.Deferred, first.Outcome);
+        Assert.False(Directory.Exists(Target));
+        Assert.False(File.Exists(Path.Combine(Legacy, DataMigration.NoteFileName)));
+
+        running = false;
+        var second = Deferring().Run();
+
+        Assert.Equal(DataMigrationOutcome.Migrated, second.Outcome);
+        Assert.Equal("old", File.ReadAllText(Path.Combine(Target, "profiles.json")));
+    }
+
+    [Fact]
+    public void The_running_check_is_not_asked_when_there_is_nothing_to_move()
+    {
+        var asked = false;
+
+        var result = new DataMigration(Legacy, Target, () => { asked = true; return true; }).Run();
+
+        Assert.Equal(DataMigrationOutcome.NothingToMigrate, result.Outcome);
+        Assert.False(asked);
+    }
+
+    [Fact]
+    public void A_file_the_old_app_writes_after_the_copy_is_saved_not_lost_and_reported_once()
+    {
+        WriteLegacy("profiles.json", "at copy time");
+        WriteLegacy("library.json", "unchanged");
+        Assert.Equal(DataMigrationOutcome.Migrated, Create().Run().Outcome);
+
+        var later = Path.Combine(Legacy, "profiles.json");
+        File.WriteAllText(later, "written by the old app afterwards");
+        File.SetLastWriteTimeUtc(later, DateTime.UtcNow.AddMinutes(5));
+
+        var result = Create().Run();
+
+        Assert.Equal(DataMigrationOutcome.AlreadyPresent, result.Outcome);
+        Assert.Equal(["profiles.json"], result.RecoveredFiles);
+        Assert.Equal("at copy time", File.ReadAllText(Path.Combine(Target, "profiles.json"))); // new data is not overwritten
+        var saved = Directory.GetFiles(Path.Combine(Target, DataMigration.RecoveredFolderName), "profiles.json", SearchOption.AllDirectories);
+        Assert.Equal("written by the old app afterwards", File.ReadAllText(Assert.Single(saved)));
+
+        Assert.Null(Create().Run().RecoveredFiles); // already saved, not repeated on every start
+    }
 }

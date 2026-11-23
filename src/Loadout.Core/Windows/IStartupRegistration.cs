@@ -6,6 +6,9 @@ namespace Loadout.Core.Windows;
 /// </summary>
 public interface IStartupRegistration
 {
+    /// <summary>True if a login entry exists, even one the user switched off in Task Manager.</summary>
+    bool HasEntry();
+
     /// <summary>True if the launcher is currently set to run at login.</summary>
     bool IsEnabled();
 

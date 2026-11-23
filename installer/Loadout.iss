@@ -123,3 +123,29 @@ function IsFirstInstall(): Boolean;
 begin
   Result := FirstInstall;
 end;
+
+{ CloseApplications only closes programs that hold files Setup replaces, and the old StartupProfiles.exe lives in
+  a different folder. Stop it explicitly, and refuse to go on while it still runs: a running old app would keep
+  writing to the old data folder and block the removal of its program folder. taskkill exits with 128 when there
+  is no such process left. }
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode, Attempt: Integer;
+  Stopped: Boolean;
+begin
+  Result := '';
+  Stopped := False;
+  for Attempt := 1 to 20 do
+  begin
+    if Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM {#OldAppExeName}', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
+      and (ResultCode = 128) then
+    begin
+      Stopped := True;
+      Break;
+    end;
+    Sleep(500);
+  end;
+
+  if not Stopped then
+    Result := 'Startup Profiles is still running and could not be closed. Close it from its tray icon, then run setup again.';
+end;

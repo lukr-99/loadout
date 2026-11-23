@@ -20,20 +20,24 @@ public sealed class RunningInstance
     /// <summary>Returns the running instance if endpoint.json points at a live host, else null.</summary>
     public static RunningInstance? Discover()
     {
-        if (RuntimeInfo.ReadUrl() is not { } url || !Uri.TryCreate(url, UriKind.Absolute, out var baseAddress))
-            return null;
+        // The new discovery file first, then the deprecated one; a dead entry falls through to the next.
+        foreach (var url in RuntimeInfo.ReadUrls())
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var baseAddress)) continue;
 
-        try
-        {
-            using var http = new HttpClient { BaseAddress = baseAddress, Timeout = TimeSpan.FromSeconds(2) };
-            var health = http.GetAsync("/api/health").GetAwaiter().GetResult();
-            return health.IsSuccessStatusCode ? new RunningInstance(baseAddress) : null;
+            try
+            {
+                using var http = new HttpClient { BaseAddress = baseAddress, Timeout = TimeSpan.FromSeconds(2) };
+                var health = http.GetAsync("/api/health").GetAwaiter().GetResult();
+                if (health.IsSuccessStatusCode) return new RunningInstance(baseAddress);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+            {
+                // Stale endpoint.json (the app is not actually running); try the next one.
+            }
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
-        {
-            // Stale endpoint.json (the app is not actually running); fall back to a direct write.
-            return null;
-        }
+
+        return null; // not running: fall back to a direct write
     }
 
     /// <summary>Fetches the destinations the window offers - the base, then every profile - from the running instance.</summary>
