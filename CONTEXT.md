@@ -1,6 +1,6 @@
-# Windows Startup Profiles
+# Loadout
 
-Startup Profiles replaces the pile of Windows startup apps with one launcher. At login the user picks
+Loadout replaces the pile of Windows startup apps with one launcher. At login the user picks
 what they are about to do, and only the apps and steps for that context run.
 
 ## Language
@@ -45,8 +45,8 @@ those apps into a profile or the library.
 _Avoid_: Startup list, system apps
 
 **Registration request**:
-Another app asking to be added to Startup Profiles, through a `startupprofiles://` link, the CLI, or
-the API. The user decides in a Startup Profiles window; an app never adds itself.
+Another app asking to be added to Loadout, through a `loadout://` link, the CLI, or
+the API. The user decides in a Loadout window; an app never adds itself.
 _Avoid_: Self-registration, install hook
 
 **Launcher**:

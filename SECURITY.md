@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Startup Profiles is pre-release (0.x); only the latest `main` receives fixes.
+Loadout is pre-release (0.x); only the latest `main` receives fixes.
 
 ## Reporting
 
@@ -12,7 +12,7 @@ Report suspected vulnerabilities privately to the maintainer via a GitHub securi
 ## Trust boundaries
 
 - **Local data** - profiles, config, and run history are plain JSON under
-  `%APPDATA%\StartupProfiles`. Nothing is sent off the machine. Treat these files as trusted input
+  `%APPDATA%\Loadout`. Nothing is sent off the machine. Treat these files as trusted input
   from the user; corrupt or hand-edited files fall back to defaults rather than crashing.
 - **Action execution** - running a profile launches real applications, scripts, and services that the
   user configured. Profiles are authored locally by the user, not received from any peer. `RunScript`
@@ -29,6 +29,6 @@ Report suspected vulnerabilities privately to the maintainer via a GitHub securi
 
 ## Recovery
 
-Delete or edit the JSON files under `%APPDATA%\StartupProfiles` to reset profiles, config, or history.
+Delete or edit the JSON files under `%APPDATA%\Loadout` to reset profiles, config, or history.
 Startup registration is a per-user `Run` key value that can be removed from the app or via
 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.

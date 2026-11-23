@@ -1,7 +1,7 @@
 # Release signing
 
 The release workflow signs the published executables (before they are zipped and packed into the
-installer) and then the installer itself, `StartupProfiles-Setup-<version>.exe`. The `.sha256` files are
+installer) and then the installer itself, `Loadout-Setup-<version>.exe`. The `.sha256` files are
 written after signing, so they match the signed downloads; the in-app updater refuses an installer whose
 hash does not match.
 
@@ -19,8 +19,8 @@ This page describes how release executables get an Authenticode signature today.
 
 On a `v*` tag push, after `dotnet publish` writes the app to `publish/`:
 
-1. **Sign executables** runs `tools/sign-windows-artifacts.ps1` on `publish/StartupProfiles*.exe`
-   with the description `Startup Profiles` and the repository URL. It gets two repository secrets as
+1. **Sign executables** runs `tools/sign-windows-artifacts.ps1` on `publish/Loadout*.exe`
+   with the description `Loadout` and the repository URL. It gets two repository secrets as
    environment variables: `WINDOWS_CERT_PFX_BASE64` and `WINDOWS_CERT_PASSWORD`. DLLs are not signed.
 2. **Package** zips `publish/` after signing. A zip has no signature of its own, so the signed
    executables inside are what SmartScreen checks once a user extracts them.

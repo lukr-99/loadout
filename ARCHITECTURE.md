@@ -32,7 +32,7 @@ Loadout.slnx
     Models/        Profile, ProfileAction, ActionType, FailureBehaviour, conditions
     Actions/       one handler per action type (launch, url, script, service, ...)
     Execution/     ProfileRunner: ordering, delays, wait-for, failure handling, history
-    Storage/       load/save profiles + config as JSON under %APPDATA%\StartupProfiles
+    Storage/       load/save profiles + config as JSON under %APPDATA%\Loadout
     Windows/       startup registration, process handling, services, elevation helpers
     Integration/   registration-request parsing + the confirmation model
   src/Loadout.Windows net10.0-windows    Windows adapters behind the Core seams
@@ -45,7 +45,7 @@ Loadout.slnx
     Discovery/     the "New startup apps" window
     Updates/       UpdateCoordinator: check, download, verify, install (DotNetLib.Core.Updating)
     Themes/        light/dark/high-contrast token dictionaries + ThemeManager over DotNetLib's theme engine
-  installer/       Inno Setup script + build-installer.ps1 (the release's StartupProfiles-Setup-<v>.exe)
+  installer/       Inno Setup script + build-installer.ps1 (the release's Loadout-Setup-<v>.exe)
 ```
 
 `Core` targets plain `net10.0` so the execution engine and models stay unit-testable and
@@ -107,8 +107,12 @@ A profile is therefore a small declarative workflow, e.g. *Work*:
 
 ## Storage
 
-Profiles and app config live as plain JSON under `%APPDATA%\StartupProfiles` - no database
-engine, nothing leaves the machine. A full backup moves a setup between computers (see Data safety).
+Profiles and app config live as plain JSON under `%APPDATA%\Loadout` - no database
+engine, nothing leaves the machine. Before the rename the folder was `%APPDATA%\StartupProfiles`:
+`Storage/DataMigration` copies it on the first start (staging folder, SHA-256 check, rename into
+place), leaves the old folder with a `MOVED-TO-LOADOUT.txt` note, and retries on the next start if the
+copy failed. While it failed the app runs from the old folder. `endpoint.json` is also written to the
+old folder for as long as it exists (deprecated). A full backup moves a setup between computers (see Data safety).
 (TOML is a possible alternative; JSON is the default to match Treeline.)
 
 ### Data safety
@@ -116,7 +120,7 @@ engine, nothing leaves the machine. A full backup moves a setup between computer
 The data contract, per CodePrint's data lifecycle rules:
 
 - **Owner and store.** The local user owns everything. The running app is the single writer of its JSON
-  files in `%APPDATA%\StartupProfiles`; one-shot `register` processes write through its loopback API.
+  files in `%APPDATA%\Loadout`; one-shot `register` processes write through its loopback API.
   Files are written atomically (temp file, then move).
 - **Identity.** Profiles have stable slug ids (`work`); library items have stable ids that profile steps
   link to (`LibraryItemId`). Run history timestamps are `DateTimeOffset` with the local offset.
@@ -183,7 +187,7 @@ Built in Core:
 - **Execution/** - `ProfileRunner` walks actions in order, applies each action's lead `Delay`,
   dispatches to the handler, honours `FailureBehaviour` (continue / stop / retry with `RetryCount`),
   and records an `ActionExecution` per action into a `ProfileRun`.
-- **Storage/** - JSON persistence under `%APPDATA%\StartupProfiles` (`profiles.json`, `config.json`,
+- **Storage/** - JSON persistence under `%APPDATA%\Loadout` (`profiles.json`, `config.json`,
   `history.json`) via `ProfileStore` / `ConfigStore` / `HistoryStore`. A fresh install seeds the six
   default profiles. Enums persist as names; writes are atomic (temp file + move).
 - **Windows/** - the platform seam interfaces `IStartupRegistration`, `IServiceController`,
@@ -232,12 +236,12 @@ Built in Loadout.App (WPF UI - Milestone 4):
   dictionary (Light, Dark, or HighContrast.xaml, which maps to system colors); `Controls.xaml` is merged
   last so the app's control styles win over WPF UI's.
 - **Updates** - `Updates/UpdateCoordinator`: `GitHubReleaseSource` finds the latest release's
-  `StartupProfiles-Setup-*.exe`, `ReleaseVersion` decides if it is newer, the installer is downloaded to
-  `%TEMP%\StartupProfiles\updates`, checked against the `.sha256` published next to it, and started with
+  `Loadout-Setup-*.exe`, `ReleaseVersion` decides if it is newer, the installer is downloaded to
+  `%TEMP%\Loadout\updates`, checked against the `.sha256` published next to it, and started with
   `/SILENT`; the app exits only after the installer started. A daily automatic check (setting
   `checkForUpdates`, last run in `lastUpdateCheck`) and Settings > Updates or the tray drive it. The
   release page is the manual path.
-- **Installer** - `installer/Loadout.iss` (per user, `%LOCALAPPDATA%\Programs\StartupProfiles`,
+- **Installer** - `installer/Loadout.iss` (per user, `%LOCALAPPDATA%\Programs\Loadout`,
   the same folder as `install.ps1`). It registers login and the protocol through the app's maintenance
   commands, offers the startup takeover on a first install only, relaunches the app after a silent
   update, and on uninstall stops the app, restores the startup apps, and removes its registrations.
@@ -284,7 +288,7 @@ Built in Core/Integration and Loadout.App/Integration (Milestone 5):
 - **Api** - `POST /api/register` applies a request via `IProfileRegistrar` behind the same two-phase
   confirmation token as delete.
 
-Registering the `startupprofiles://` scheme with Windows is done by the installer via
+Registering the `loadout://` scheme with Windows is done by the installer via
 `IProtocolRegistration` / `WindowsProtocolRegistration` (see below). Still open on the contract:
 `supportsMinimized` is carried as metadata only (launch-minimized is not yet an action field). The
 Windows adapters carry platform tests only for the registry round-trips (startup + protocol); service
@@ -292,7 +296,7 @@ and VPN control are thin wrappers over the OS and are exercised manually. WPF wi
 view-model tests, not UI automation.
 
 Installer (`install/install.ps1`, `uninstall.ps1`): a per-user PowerShell installer. It publishes the
-App, installs it to `%LOCALAPPDATA%\Programs\StartupProfiles`, adds a Start Menu shortcut, and installs
+App, installs it to `%LOCALAPPDATA%\Programs\Loadout`, adds a Start Menu shortcut, and installs
 the agent skill; login and protocol registration are delegated to the app's own maintenance commands
 (`Loadout.exe --register-login` / `--register-protocol`), which run the `IStartupRegistration`
 and `IProtocolRegistration` adapters so the registry formats stay owned by the app. `App/Maintenance`

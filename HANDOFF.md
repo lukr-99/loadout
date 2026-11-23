@@ -1,6 +1,6 @@
 # Handoff
 
-Snapshot of Windows Startup Profiles as of 2026-08-31. For the full design see
+Snapshot of Loadout as of 2026-08-31. For the full design see
 [docs/ARCHITECTURE.md](ARCHITECTURE.md); for conventions see [AGENTS.md](AGENTS.md) and
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -29,7 +29,7 @@ dotnet format Loadout.slnx --verify-no-changes
   of the package context; the app's loopback API is unaffected and safe to use from anywhere.
 - Run the app: `dotnet run --project src/Loadout.App` (add `--headless` for the API only,
   `--port N` to override the port, default 8790).
-- Data lives in `%APPDATA%\StartupProfiles` (`profiles.json`, `config.json`, `history.json`,
+- Data lives in `%APPDATA%\Loadout` (`profiles.json`, `config.json`, `history.json`,
   `endpoint.json`, `startup-takeover.json`, `startup-seen.json`, `base.json`, `library.json`). Nothing leaves the machine.
 
 ## What exists
@@ -68,10 +68,10 @@ Key design points:
 
 `Core/Integration` (portable) + `App/Integration` (host) implement the contract from
 [docs/INTEGRATION.md](docs/INTEGRATION.md). `RegistrationRequestParser` parses both the
-`startupprofiles://register?...` URI and the `register --app-id ...` CLI form; `RegistrationTargets` is
+`loadout://register?...` URI and the `register --app-id ...` CLI form; `RegistrationTargets` is
 where the user chose to put the app, and `ProfileRegistrar` keeps it in the global library and appends a
 linked launch action to each chosen destination (idempotent per target). Three entry points feed one
-trusted, Startup Profiles-owned confirmation window: the protocol, the CLI, and `POST /api/register`
+trusted, Loadout-owned confirmation window: the protocol, the CLI, and `POST /api/register`
 (two-phase confirm, like delete). A one-shot `register` invocation routes its write through a running
 instance's loopback API when one is live, so the running app stays the single writer of `profiles.json`.
 
@@ -82,7 +82,7 @@ capped to the screen's work area. A profile that includes the base is reported a
 base starts the app, so it never launches twice. `POST /api/register` mirrors all of it: `includeBase`
 plus `profileIds`, and an empty pair is the recognize-only case.
 
-One deliberate gap: **registering the `startupprofiles://` scheme with Windows is left to the installer**
+One deliberate gap: **registering the `loadout://` scheme with Windows is left to the installer**
 (below). Until then, invoke the exe with the URI directly. `supportsMinimized` is carried as metadata
 only - launch-minimized is not yet an action field.
 
@@ -90,13 +90,13 @@ only - launch-minimized is not yet an action field.
 
 `install/install.ps1` installs for the current user (no elevation): publishes the App (self-contained
 by default, `-FrameworkDependent` for the smaller build), installs to
-`%LOCALAPPDATA%\Programs\StartupProfiles`, adds a Start Menu shortcut, registers the launcher at login,
-registers the `startupprofiles://` protocol, and installs the agent skill to `~/.claude/skills`.
+`%LOCALAPPDATA%\Programs\Loadout`, adds a Start Menu shortcut, registers the launcher at login,
+registers the `loadout://` protocol, and installs the agent skill to `~/.claude/skills`.
 Login/protocol registration is done by invoking the app's own maintenance commands
 (`Loadout.exe --register-login` / `--register-protocol`), which run the
 `IStartupRegistration` / `IProtocolRegistration` Windows adapters. `install/uninstall.ps1` reverses it
 all (registry keys removed directly so it works even if the exe is gone; `-PurgeData` also deletes
-`%APPDATA%\StartupProfiles`). Switches: `-Port`, `-FrameworkDependent`, `-NoStartup`,
+`%APPDATA%\Loadout`). Switches: `-Port`, `-FrameworkDependent`, `-NoStartup`,
 `-KeepStartupApps`, `-NoProtocol`, `-NoSkill`.
 
 ## Startup takeover (done)
@@ -126,9 +126,9 @@ gets two launch actions.
 `.github/workflows/release.yml` cuts a release on a `v*` tag push: it derives the version from the tag,
 stamps it into the assembly via `-p:Version=<tag>` (the one version source is `VersionPrefix` in
 `Directory.Build.props`; Debug builds add a `-dev` suffix), tests, publishes a self-contained win-x64
-build, zips it as `StartupProfiles-<version>-win-x64.zip`, and attaches it to a GitHub Release with
+build, zips it as `Loadout-<version>-win-x64.zip`, and attaches it to a GitHub Release with
 generated notes. It also builds the Inno installer from the signed publish folder, signs it, and attaches
-`StartupProfiles-Setup-<version>.exe` with its `.sha256` (checksums are written after signing). To ship:
+`Loadout-Setup-<version>.exe` with its `.sha256` (checksums are written after signing). To ship:
 bump `VersionPrefix`, then push the matching tag `vX.Y.Z`.
 
 **The updater needs public releases**: it reads `releases/latest` without a token, and the repository is
@@ -176,7 +176,7 @@ value) show a generic icon.
 
 The config window's Profiles tab has a right-hand panel with two tabs:
 
-- **Defaults** - every launchable `IStartupAppCatalog` entry (on or off, except Startup Profiles itself),
+- **Defaults** - every launchable `IStartupAppCatalog` entry (on or off, except Loadout itself),
   sorted by name, with its shell icon and "Registry / Startup folder / Store app · starts with Windows /
   off in Windows". Catalog names use the exe's file description, as Task Manager does ("Microsoft Edge"
   instead of `MicrosoftEdgeAutoLaunch_...`), except Squirrel's shared `Update.exe`.
@@ -267,7 +267,7 @@ the app's tokens and styles layered on top (plus a high-contrast token set); Win
 implicit styles now reach controls the app does not style; the combo box's inner toggle opts out (see
 docs/pitfalls.md).
 
-`installer/build-installer.ps1` builds `installer/dist/StartupProfiles-Setup-<version>.exe` locally (needs
+`installer/build-installer.ps1` builds `installer/dist/Loadout-Setup-<version>.exe` locally (needs
 Inno Setup 6). `UpdateCoordinator` checks once a day and on demand, verifies the installer's SHA-256, and
 installs silently on consent; Settings > Updates and the tray show it.
 

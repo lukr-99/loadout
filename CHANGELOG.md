@@ -5,6 +5,19 @@ release is a Git tag `vX.Y.Z` that matches it.
 
 ## [Unreleased]
 
+- **Startup Profiles is now Loadout.** The exe is `Loadout.exe`, the install folder is
+  `%LOCALAPPDATA%\Programs\Loadout`, and the installer is `Loadout-Setup-<version>.exe`. Installing
+  it over Startup Profiles upgrades in place: the old program folder, Start Menu shortcut and agent
+  skill are removed, and the login entry is replaced. The projects, namespaces and solution are renamed
+  to `Loadout.*` too.
+- **Your data moves, nothing is deleted.** On the first start, `%APPDATA%\StartupProfiles` is copied to
+  `%APPDATA%\Loadout`, checked file by file, and then put in place. The old folder stays, with a
+  `MOVED-TO-LOADOUT.txt` note. If the copy fails, the app keeps using the old folder for that run and
+  tries again next time.
+- Transition: `endpoint.json` is written to the new and the old data folder, and the agent skill (now
+  `skills/loadout`) reads the new path first. The old path is deprecated. The `startupprofiles://`
+  scheme still works next to the new `loadout://`. Releases also attach the installer as
+  `StartupProfiles-Setup-<version>.exe` so installs of the old name can update themselves.
 - New About window (tray menu, and Settings in the configuration window): who made the app, a feedback
   invitation with Instagram, GitHub and Issues links, the app's facts, and credits.
 - A profile run that throws no longer leaves the launcher stuck or the configuration window on
