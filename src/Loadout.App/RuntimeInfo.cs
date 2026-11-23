@@ -6,7 +6,9 @@ namespace Loadout.App;
 
 /// <summary>
 /// Publishes the discovery file (endpoint.json) so agents and the tray can find the running instance's
-/// URL without guessing the port. Best-effort: failures never take down the host.
+/// URL without guessing the port. It is written to the data folder and, while the old
+/// %APPDATA%\StartupProfiles folder exists, to that one too (deprecated, so older agents keep working).
+/// Best-effort: failures never take down the host.
 /// </summary>
 internal static class RuntimeInfo
 {
@@ -20,27 +22,40 @@ internal static class RuntimeInfo
             version = typeof(RuntimeInfo).Assembly.GetName().Version?.ToString(),
             startedAt = DateTimeOffset.UtcNow,
         };
-        try { File.WriteAllText(LoadoutPaths.EndpointFile, JsonSerializer.Serialize(info)); }
-        catch (IOException) { /* best effort */ }
+        var json = JsonSerializer.Serialize(info);
+        foreach (var file in LoadoutPaths.EndpointFilesToWrite())
+        {
+            try { File.WriteAllText(file, json); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { /* best effort */ }
+        }
     }
 
+    /// <summary>The running host's URL: the new discovery file first, then the deprecated old one.</summary>
     public static string? ReadUrl()
     {
-        try
+        foreach (var file in LoadoutPaths.EndpointFilesToRead())
         {
-            if (!File.Exists(LoadoutPaths.EndpointFile)) return null;
-            using var doc = JsonDocument.Parse(File.ReadAllText(LoadoutPaths.EndpointFile));
-            return doc.RootElement.GetProperty("url").GetString();
+            try
+            {
+                if (!File.Exists(file)) continue;
+                using var doc = JsonDocument.Parse(File.ReadAllText(file));
+                if (doc.RootElement.GetProperty("url").GetString() is { } url) return url;
+            }
+            catch (Exception ex) when (ex is IOException or JsonException or KeyNotFoundException or UnauthorizedAccessException)
+            {
+                // Try the next path.
+            }
         }
-        catch (Exception ex) when (ex is IOException or JsonException)
-        {
-            return null;
-        }
+
+        return null;
     }
 
     public static void Delete()
     {
-        try { if (File.Exists(LoadoutPaths.EndpointFile)) File.Delete(LoadoutPaths.EndpointFile); }
-        catch (IOException) { /* ignore */ }
+        foreach (var file in LoadoutPaths.EndpointFilesToWrite())
+        {
+            try { if (File.Exists(file)) File.Delete(file); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { /* ignore */ }
+        }
     }
 }

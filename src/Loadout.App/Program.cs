@@ -38,6 +38,10 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
+        // First of all, before anything reads or creates the data folder: bring over the data of the old
+        // name (Startup Profiles) if this is the first start under the new one.
+        MigrateData();
+
         // Installer maintenance commands (--register-login, --register-protocol, ...) run headlessly and
         // exit; they must not take the mutex or start the API.
         if (MaintenanceCommands.TryRun(args)) return;
@@ -83,6 +87,16 @@ internal static class Program
             host.StopAsync().GetAwaiter().GetResult();
             RuntimeInfo.Delete();
         }
+    }
+
+    private static void MigrateData()
+    {
+        var result = DataMigration.ForCurrentUser().Run();
+        if (result.Outcome != DataMigrationOutcome.Failed) return;
+
+        // Keep working from the old folder so the user still sees their profiles; the next start tries again.
+        LoadoutPaths.UseLegacyDirectoryForThisRun();
+        Diagnostics.CrashLog.Write("DataMigration", $"Could not copy the old data folder: {result.Error}");
     }
 
     private static void RunUi(WebApplication host, SingleInstance instance)
