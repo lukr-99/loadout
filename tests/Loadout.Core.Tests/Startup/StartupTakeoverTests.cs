@@ -7,7 +7,7 @@ namespace Loadout.Core.Tests.Startup;
 
 public sealed class StartupTakeoverTests
 {
-    private const string OwnValueName = "StartupProfiles";
+    private const string OwnValueName = "Loadout";
 
     private readonly FakeProfileStore _profiles = new([.. DefaultProfiles.Create()]);
     private readonly FakeStartupTakeoverStore _record = new();

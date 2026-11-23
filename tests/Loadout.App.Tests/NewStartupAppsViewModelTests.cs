@@ -31,11 +31,11 @@ public sealed class NewStartupAppsViewModelTests : IDisposable
     private (NewStartupAppsViewModel ViewModel, StartupDiscovery Discovery) Open(bool tookOver = false)
     {
         var catalog = _services.StartupApps;
-        var takeover = new StartupTakeover(catalog, _services.Profiles, new StartupTakeoverStore(_takeoverFile), "StartupProfiles");
+        var takeover = new StartupTakeover(catalog, _services.Profiles, new StartupTakeoverStore(_takeoverFile), "Loadout");
         if (tookOver) takeover.SwitchOff(Entry("Old"));
 
         var discovery = new StartupDiscovery(catalog, new StartupSeenStore(_seenFile), takeover, _services.Profiles,
-            _services.Base, _services.Library, "StartupProfiles");
+            _services.Base, _services.Library, "Loadout");
         discovery.FindNew(); // the first look only records what is there
         catalog.Entries.Add(Entry("Spotify"));
         catalog.Entries.Add(Entry("Zoom"));

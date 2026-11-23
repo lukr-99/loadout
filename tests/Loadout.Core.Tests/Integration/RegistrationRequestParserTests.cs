@@ -7,7 +7,7 @@ public sealed class RegistrationRequestParserTests
     [Fact]
     public void TryParseUri_FullQuery_MapsEveryField()
     {
-        const string uri = "startupprofiles://register?appId=com.example.app&name=Example%20App" +
+        const string uri = "loadout://register?appId=com.example.app&name=Example%20App" +
             "&target=C%3A%5CApps%5Cexample.exe&args=--fast&icon=example.ico&publisher=Example%20Inc" +
             "&suggestedProfile=dev&supportsMinimized=true";
 
@@ -26,8 +26,17 @@ public sealed class RegistrationRequestParserTests
     [Fact]
     public void TryParseUri_OpaqueForm_IsAccepted()
     {
-        const string uri = "startupprofiles:register?appId=a&name=A&target=a.exe";
+        const string uri = "loadout:register?appId=a&name=A&target=a.exe";
 
+        Assert.True(RegistrationRequestParser.TryParseUri(uri, out var request, out _));
+        Assert.Equal("a", request.AppId);
+    }
+
+    [Theory]
+    [InlineData("startupprofiles://register?appId=a&name=A&target=a.exe")]
+    [InlineData("STARTUPPROFILES:register?appId=a&name=A&target=a.exe")]
+    public void TryParseUri_OldScheme_StillWorks(string uri)
+    {
         Assert.True(RegistrationRequestParser.TryParseUri(uri, out var request, out _));
         Assert.Equal("a", request.AppId);
     }
@@ -44,7 +53,7 @@ public sealed class RegistrationRequestParserTests
     public void TryParseUri_UnsupportedAction_Fails()
     {
         Assert.False(RegistrationRequestParser.TryParseUri(
-            "startupprofiles://remove?appId=a", out _, out var error));
+            "loadout://remove?appId=a", out _, out var error));
         Assert.Contains("Unsupported action", error, StringComparison.Ordinal);
     }
 
@@ -52,7 +61,7 @@ public sealed class RegistrationRequestParserTests
     public void TryParseUri_MissingTarget_ReportsMissingField()
     {
         Assert.False(RegistrationRequestParser.TryParseUri(
-            "startupprofiles://register?appId=a&name=A", out _, out var error));
+            "loadout://register?appId=a&name=A", out _, out var error));
         Assert.Contains("target", error, StringComparison.OrdinalIgnoreCase);
     }
 

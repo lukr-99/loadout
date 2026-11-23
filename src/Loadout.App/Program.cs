@@ -32,7 +32,7 @@ namespace Loadout.App;
 
 internal static class Program
 {
-    private const string InstanceName = "StartupProfiles";
+    private const string InstanceName = "Loadout";
     private const string UpdatesHttpClient = "updates";
 
     [STAThread]
@@ -71,6 +71,8 @@ internal static class Program
             return;
         }
 
+        MigrateAutostart();
+
         var host = BuildHost(options);
         host.StartAsync().GetAwaiter().GetResult();
         RuntimeInfo.Write(options.Port);
@@ -97,6 +99,24 @@ internal static class Program
         // Keep working from the old folder so the user still sees their profiles; the next start tries again.
         LoadoutPaths.UseLegacyDirectoryForThisRun();
         Diagnostics.CrashLog.Write("DataMigration", $"Could not copy the old data folder: {result.Error}");
+    }
+
+    // The old name's "start at login" entry would start a removed exe. Swap it for the new one, keeping
+    // it off when the user had switched it off.
+    private static void MigrateAutostart()
+    {
+        try
+        {
+            var path = Environment.ProcessPath;
+            if (path is null) return;
+            LegacyAutostart.Replace(
+                new WindowsStartupRegistration(WindowsStartupRegistration.LegacyValueName),
+                new WindowsStartupRegistration(), $"\"{path}\"");
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException)
+        {
+            Diagnostics.CrashLog.Write("AutostartMigration", ex);
+        }
     }
 
     private static void RunUi(WebApplication host, SingleInstance instance)
@@ -290,16 +310,16 @@ internal static class Program
 
         // The update check and installer download share one named HttpClient with the app's user agent.
         builder.Services.AddHttpClient(UpdatesHttpClient, client =>
-            client.DefaultRequestHeaders.UserAgent.ParseAdd($"StartupProfiles/{AppVersion}"));
+            client.DefaultRequestHeaders.UserAgent.ParseAdd($"Loadout/{AppVersion}"));
         builder.Services.AddSingleton(sp =>
         {
             var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient(UpdatesHttpClient);
             return new UpdateCoordinator(
                 new GitHubReleaseSource(http, "lukr-99", "startup-profiles",
-                    name => name.StartsWith("StartupProfiles-Setup-", StringComparison.OrdinalIgnoreCase) &&
+                    name => name.StartsWith("Loadout-Setup-", StringComparison.OrdinalIgnoreCase) &&
                             name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)),
                 http, AppVersion, sp.GetRequiredService<IConfigStore>(), StartInstaller,
-                Path.Combine(Path.GetTempPath(), "StartupProfiles", "updates"));
+                Path.Combine(Path.GetTempPath(), "Loadout", "updates"));
         });
 
         // One per Settings window, so each gets its own debounced save scheduler.

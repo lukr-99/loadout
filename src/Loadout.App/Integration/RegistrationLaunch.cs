@@ -13,12 +13,16 @@ internal static class RegistrationLaunch
     /// <summary>True when these args are a registration invocation (so the host runs the one-shot flow).</summary>
     public static bool IsRegistrationInvocation(IReadOnlyList<string> args) =>
         args.Count > 0 &&
-        (args[0].StartsWith($"{RegistrationRequestParser.Scheme}:", StringComparison.OrdinalIgnoreCase) ||
+        (IsUri(args[0]) ||
          string.Equals(args[0], RegistrationRequestParser.RegisterAction, StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsUri(string arg) =>
+        arg.StartsWith($"{RegistrationRequestParser.Scheme}:", StringComparison.OrdinalIgnoreCase) ||
+        arg.StartsWith($"{RegistrationRequestParser.LegacyScheme}:", StringComparison.OrdinalIgnoreCase);
 
     public static bool TryParse(IReadOnlyList<string> args, [NotNullWhen(true)] out RegistrationRequest? request, out string error)
     {
-        if (args.Count > 0 && args[0].StartsWith($"{RegistrationRequestParser.Scheme}:", StringComparison.OrdinalIgnoreCase))
+        if (args.Count > 0 && IsUri(args[0]))
             return RegistrationRequestParser.TryParseUri(args[0], out request, out error);
 
         return RegistrationRequestParser.TryParseArguments(args, out request, out error);

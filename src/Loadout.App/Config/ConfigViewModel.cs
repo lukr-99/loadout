@@ -474,7 +474,8 @@ public sealed class ConfigViewModel : ObservableObject
 
     private static bool IsOwnEntry(StartupEntry entry) =>
         entry.Source == StartupEntrySource.UserRunKey &&
-        string.Equals(entry.Key, WindowsStartupRegistration.DefaultValueName, StringComparison.OrdinalIgnoreCase);
+        (string.Equals(entry.Key, WindowsStartupRegistration.DefaultValueName, StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(entry.Key, WindowsStartupRegistration.LegacyValueName, StringComparison.OrdinalIgnoreCase));
 
     private void LoadList()
     {

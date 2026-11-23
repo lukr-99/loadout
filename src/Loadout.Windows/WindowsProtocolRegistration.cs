@@ -30,7 +30,7 @@ public sealed class WindowsProtocolRegistration : IProtocolRegistration
     public void Register(string executablePath)
     {
         using var scheme = Registry.CurrentUser.CreateSubKey(_schemePath);
-        scheme.SetValue(null, "URL:Startup Profiles Protocol", RegistryValueKind.String);
+        scheme.SetValue(null, "URL:Loadout Protocol", RegistryValueKind.String);
         scheme.SetValue("URL Protocol", "", RegistryValueKind.String);
 
         using var command = Registry.CurrentUser.CreateSubKey($@"{_schemePath}\shell\open\command");

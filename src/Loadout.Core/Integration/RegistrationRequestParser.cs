@@ -12,7 +12,15 @@ namespace Loadout.Core.Integration;
 public static class RegistrationRequestParser
 {
     /// <summary>The scheme of the registration protocol URI.</summary>
-    public const string Scheme = "startupprofiles";
+    public const string Scheme = "loadout";
+
+    /// <summary>The scheme of the old name (Startup Profiles). Still accepted, so existing links keep working.</summary>
+    public const string LegacyScheme = "startupprofiles";
+
+    /// <summary>True when <paramref name="scheme"/> is the current or the old registration scheme.</summary>
+    public static bool IsKnownScheme(string scheme) =>
+        string.Equals(scheme, Scheme, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scheme, LegacyScheme, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>The action segment expected after the scheme (<c>startupprofiles://register</c>).</summary>
     public const string RegisterAction = "register";
@@ -28,7 +36,7 @@ public static class RegistrationRequestParser
         }
 
         if (!Uri.TryCreate(uri, UriKind.Absolute, out var parsed) ||
-            !string.Equals(parsed.Scheme, Scheme, StringComparison.OrdinalIgnoreCase))
+            !IsKnownScheme(parsed.Scheme))
         {
             error = $"Not a {Scheme}:// registration URI.";
             return false;

@@ -142,7 +142,7 @@ public sealed class UpdateCoordinator : ObservableObject
         {
             Directory.CreateDirectory(_downloadDirectory);
             var name = Path.GetFileName(new Uri(release.DownloadUrl).LocalPath);
-            path = Path.Combine(_downloadDirectory, string.IsNullOrEmpty(name) ? $"StartupProfiles-Setup-{AvailableVersion}.exe" : name);
+            path = Path.Combine(_downloadDirectory, string.IsNullOrEmpty(name) ? $"Loadout-Setup-{AvailableVersion}.exe" : name);
             await new UpdateService(_source, CurrentVersion, _http).DownloadAsync(release, path, ct).ConfigureAwait(true);
 
             var expected = await ExpectedHashAsync(release, ct).ConfigureAwait(true);

@@ -170,7 +170,8 @@ public sealed class ConfigViewModelTests
         [
             Entry("Steam", "steam.exe"),
             Entry("Discord", "Update.exe", enabled: false),
-            Entry("StartupProfiles", "Loadout.exe"),
+            Entry("Loadout", "Loadout.exe"),
+            Entry("StartupProfiles", "StartupProfiles.exe"), // the old name's own entry
             new StartupEntry { Source = StartupEntrySource.PackagedTask, Key = "Feed", Name = "Feed", IsEnabled = true },
         ]);
 

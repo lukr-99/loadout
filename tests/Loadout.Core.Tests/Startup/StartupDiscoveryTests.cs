@@ -8,7 +8,7 @@ namespace Loadout.Core.Tests.Startup;
 
 public sealed class StartupDiscoveryTests : IDisposable
 {
-    private const string OwnValueName = "StartupProfiles";
+    private const string OwnValueName = "Loadout";
 
     private readonly string _libraryFile = Path.Combine(Path.GetTempPath(), $"sp-disc-{Guid.NewGuid():N}.json");
     private readonly string _baseFile = Path.Combine(Path.GetTempPath(), $"sp-discb-{Guid.NewGuid():N}.json");

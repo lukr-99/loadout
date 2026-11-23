@@ -1,3 +1,4 @@
+using Loadout.Core.Integration;
 using Loadout.Core.Startup;
 using Loadout.Core.Storage;
 using Loadout.Core.Windows;
@@ -73,21 +74,29 @@ public static class MaintenanceCommands
     private static void Run(MaintenanceCommand command, string executablePath)
     {
         var login = new WindowsStartupRegistration();
-        var protocol = new WindowsProtocolRegistration();
+        var legacyLogin = new WindowsStartupRegistration(WindowsStartupRegistration.LegacyValueName);
+        // Both schemes open this exe: loadout:// is the new one, startupprofiles:// keeps old links working.
+        var protocols = new[]
+        {
+            new WindowsProtocolRegistration(RegistrationRequestParser.Scheme),
+            new WindowsProtocolRegistration(RegistrationRequestParser.LegacyScheme),
+        };
 
         switch (command)
         {
             case MaintenanceCommand.RegisterLogin:
                 login.Enable($"\"{executablePath}\"");
+                legacyLogin.Disable(); // the old name's entry would start the old (removed) exe
                 break;
             case MaintenanceCommand.UnregisterLogin:
                 login.Disable();
+                legacyLogin.Disable();
                 break;
             case MaintenanceCommand.RegisterProtocol:
-                protocol.Register(executablePath);
+                foreach (var protocol in protocols) protocol.Register(executablePath);
                 break;
             case MaintenanceCommand.UnregisterProtocol:
-                protocol.Unregister();
+                foreach (var protocol in protocols) protocol.Unregister();
                 break;
             case MaintenanceCommand.ListStartup:
                 Console.WriteLine(FormatEntries(new WindowsStartupAppCatalog().GetEntries()));

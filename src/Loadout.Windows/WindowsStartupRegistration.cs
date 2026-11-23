@@ -11,7 +11,10 @@ namespace Loadout.Windows;
 public sealed class WindowsStartupRegistration : IStartupRegistration
 {
     /// <summary>The launcher's <c>Run</c> value name.</summary>
-    public const string DefaultValueName = "StartupProfiles";
+    public const string DefaultValueName = "Loadout";
+
+    /// <summary>The <c>Run</c> value of the old name (Startup Profiles); replaced by <see cref="DefaultValueName"/>.</summary>
+    public const string LegacyValueName = "StartupProfiles";
 
     private const string DefaultRunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string DefaultApprovedKeyPath = StartupApprovedFlag.RootPath + @"\Run";
