@@ -27,16 +27,16 @@ Two hard constraints follow from that:
 ## Project layout
 
 ```
-StartupProfiles.slnx
-  src/StartupProfiles.Core   net10.0            portable, no Windows Forms/ASP.NET deps
+Loadout.slnx
+  src/Loadout.Core   net10.0            portable, no Windows Forms/ASP.NET deps
     Models/        Profile, ProfileAction, ActionType, FailureBehaviour, conditions
     Actions/       one handler per action type (launch, url, script, service, ...)
     Execution/     ProfileRunner: ordering, delays, wait-for, failure handling, history
     Storage/       load/save profiles + config as JSON under %APPDATA%\StartupProfiles
     Windows/       startup registration, process handling, services, elevation helpers
     Integration/   registration-request parsing + the confirmation model
-  src/StartupProfiles.Windows net10.0-windows    Windows adapters behind the Core seams
-  src/StartupProfiles.App    net10.0-windows    WinExe host (WPF UI + tray + loopback API)
+  src/Loadout.Windows net10.0-windows    Windows adapters behind the Core seams
+  src/Loadout.App    net10.0-windows    WinExe host (WPF UI + tray + loopback API)
     Program.cs     STA entry point (see file for boot sequence)
     Api/           loopback-only ASP.NET Core endpoints (for agents / external tools)
     Tray/          tray icon + menu on DotNetLib.Tray; TrayMenuModel holds the menu's contents
@@ -153,24 +153,24 @@ stays portable-friendly and testable.
 
 ## Implementation status
 
-Milestone 1 implemented `StartupProfiles.Core` (net10.0); Milestone 2 added `StartupProfiles.Windows`
-(net10.0-windows) adapters; Milestone 3 built the `StartupProfiles.App` host (loopback API + tray).
+Milestone 1 implemented `Loadout.Core` (net10.0); Milestone 2 added `Loadout.Windows`
+(net10.0-windows) adapters; Milestone 3 built the `Loadout.App` host (loopback API + tray).
 Each has an xUnit project under `tests/` wired into the solution.
 
 Project layout now:
 
 ```
-src/StartupProfiles.Core      net10.0            models, actions, execution, storage (portable seams)
-src/StartupProfiles.Windows   net10.0-windows    Windows adapters behind the Core seams
-src/StartupProfiles.App       net10.0-windows    WinExe host: loopback API + endpoint.json + tray
-tests/StartupProfiles.Core.Tests        net10.0
-tests/StartupProfiles.Windows.Tests     net10.0-windows
-tests/StartupProfiles.App.Tests         net10.0-windows
+src/Loadout.Core      net10.0            models, actions, execution, storage (portable seams)
+src/Loadout.Windows   net10.0-windows    Windows adapters behind the Core seams
+src/Loadout.App       net10.0-windows    WinExe host: loopback API + endpoint.json + tray
+tests/Loadout.Core.Tests        net10.0
+tests/Loadout.Windows.Tests     net10.0-windows
+tests/Loadout.App.Tests         net10.0-windows
 ```
 
 Platform code stays out of the portable Core: Core owns the seam interfaces
 (`Core/Windows/IStartupRegistration`, `IServiceController`, `IVpnConnector`) and the handlers that use
-them; `StartupProfiles.Windows` owns the concrete adapters.
+them; `Loadout.Windows` owns the concrete adapters.
 
 Built in Core:
 
@@ -190,7 +190,7 @@ Built in Core:
   `IVpnConnector`, plus the `StartServiceHandler` / `StartVpnHandler` action handlers that depend on
   them (in `Actions/`).
 
-Built in StartupProfiles.Windows (adapters):
+Built in Loadout.Windows (adapters):
 
 - `WindowsStartupRegistration` - HKCU `...\CurrentVersion\Run` value (per-user, no elevation).
 - `WindowsServiceController` - starts a service via `System.ServiceProcess.ServiceController`, waiting
@@ -200,7 +200,7 @@ Built in StartupProfiles.Windows (adapters):
 - `WindowsRuntime.CreateActionRegistry()` - the Windows composition root wiring the real launcher plus
   service/VPN adapters into `ActionHandlerRegistry.CreateDefault`.
 
-Built in StartupProfiles.App (host):
+Built in Loadout.App (host):
 
 - **Program** - STA entry point, single-instance mutex. Builds a loopback-only ASP.NET Core host
   (Kestrel bound to `127.0.0.1`), starts it, writes `endpoint.json`, then runs the tray (or waits
@@ -216,7 +216,7 @@ Built in StartupProfiles.App (host):
   in Core so they are unit-testable; the host and tray both use the executor as the single source of
   truth for running a profile.
 
-Built in StartupProfiles.App (WPF UI - Milestone 4):
+Built in Loadout.App (WPF UI - Milestone 4):
 
 - **Launcher** - the login selector (`LauncherWindow` + `LauncherViewModel`): a grid of profile tiles,
   number-key and Escape shortcuts, "Edit profiles" and "Close". Shown at startup; picking a profile
@@ -237,7 +237,7 @@ Built in StartupProfiles.App (WPF UI - Milestone 4):
   `/SILENT`; the app exits only after the installer started. A daily automatic check (setting
   `checkForUpdates`, last run in `lastUpdateCheck`) and Settings > Updates or the tray drive it. The
   release page is the manual path.
-- **Installer** - `installer/StartupProfiles.iss` (per user, `%LOCALAPPDATA%\Programs\StartupProfiles`,
+- **Installer** - `installer/Loadout.iss` (per user, `%LOCALAPPDATA%\Programs\StartupProfiles`,
   the same folder as `install.ps1`). It registers login and the protocol through the app's maintenance
   commands, offers the startup takeover on a first install only, relaunches the app after a silent
   update, and on uninstall stops the app, restores the startup apps, and removes its registrations.
@@ -269,7 +269,7 @@ Deviations and decisions worth noting:
   the WPF markup-compile helper, which is not installed here; roll-forward still runs it on newer
   patches. Revisit once the box has a matching runtime.
 
-Built in Core/Integration and StartupProfiles.App/Integration (Milestone 5):
+Built in Core/Integration and Loadout.App/Integration (Milestone 5):
 
 - **Core/Integration** - `RegistrationRequest`, `RegistrationRequestParser` (one field mapping shared
   by the protocol URI and the CLI form), and `IProfileRegistrar` / `ProfileRegistrar` (appends a launch
@@ -294,12 +294,12 @@ view-model tests, not UI automation.
 Installer (`install/install.ps1`, `uninstall.ps1`): a per-user PowerShell installer. It publishes the
 App, installs it to `%LOCALAPPDATA%\Programs\StartupProfiles`, adds a Start Menu shortcut, and installs
 the agent skill; login and protocol registration are delegated to the app's own maintenance commands
-(`StartupProfiles.exe --register-login` / `--register-protocol`), which run the `IStartupRegistration`
+(`Loadout.exe --register-login` / `--register-protocol`), which run the `IStartupRegistration`
 and `IProtocolRegistration` adapters so the registry formats stay owned by the app. `App/Maintenance`
 holds the command parse/dispatch (`MaintenanceCommand` / `MaintenanceCommands`).
 
 Startup takeover: `Core/Windows/IStartupAppCatalog` is the seam for reading and switching the OS's own
-startup entries; `StartupProfiles.Windows/WindowsStartupAppCatalog` reads the same sources as Task
+startup entries; `Loadout.Windows/WindowsStartupAppCatalog` reads the same sources as Task
 Manager (per-user and all-users `Run` keys, both Startup folders, packaged startup tasks) and switches
 per-user entries via the `StartupApproved` flags / task `State`, never deleting a registration.
 `Core/Startup/StartupTakeover` implements the install default - move every enabled, switchable startup

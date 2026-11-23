@@ -9,7 +9,7 @@
     the Start Menu shortcut, and the installed agent skill. With -PurgeData it also deletes
     %APPDATA%\StartupProfiles (profiles, config, history).
 
-    Re-enabling startup apps runs through the app (StartupProfiles.exe --restore-startup) while it is
+    Re-enabling startup apps runs through the app (Loadout.exe --restore-startup) while it is
     still installed. Registry keys are removed directly (rather than via the app) so the rest of
     uninstall works even if the executable is already gone.
 
@@ -29,7 +29,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $InstallDir = Join-Path $env:LOCALAPPDATA 'Programs\StartupProfiles'
-$ExePath    = Join-Path $InstallDir 'StartupProfiles.exe'
+$ExePath    = Join-Path $InstallDir 'Loadout.exe'
 $Shortcut   = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup Profiles.lnk'
 $SkillDir   = Join-Path $env:USERPROFILE '.claude\skills\startup-profiles'
 $TakeoverRecord = Join-Path $env:APPDATA 'StartupProfiles\startup-takeover.json'
@@ -52,7 +52,7 @@ function Restore-StartupApps {
             if ($proc.ExitCode -eq 0 -and -not (Test-Path $TakeoverRecord)) { return }
         }
         catch {
-            Write-Warning "StartupProfiles.exe --restore-startup failed: $_"
+            Write-Warning "Loadout.exe --restore-startup failed: $_"
         }
         finally {
             Remove-Item $report -ErrorAction SilentlyContinue

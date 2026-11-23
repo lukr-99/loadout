@@ -105,12 +105,12 @@ A pitfall that could hit another repository is also reported to CodePrint. CodeP
 
 ## The WPF markup compile asks for a runtime that is not installed
 
-- Symptom: building `StartupProfiles.App` fails in the WPF markup-compile step because it asks for
+- Symptom: building `Loadout.App` fails in the WPF markup-compile step because it asks for
   the shared runtime `10.0.9`, while the dev box only has `10.0.7` installed. The exact message was
   not recorded.
 - Cause: the SDK resolves a newer patch runtime for the WPF markup-compile helper than the one
   installed on the machine.
-- Fix: `src/StartupProfiles.App/StartupProfiles.App.csproj` pins
+- Fix: `src/Loadout.App/Loadout.App.csproj` pins
   `<RuntimeFrameworkVersion>10.0.7</RuntimeFrameworkVersion>`. Roll-forward still runs the app on
   newer patches. Remove the pin once the machine has a matching runtime. See
   [ADR 0001](adr/0001-local-wpf-mvvm.md).

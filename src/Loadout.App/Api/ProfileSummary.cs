@@ -1,0 +1,10 @@
+using Loadout.Core.Models;
+
+namespace Loadout.App.Api;
+
+/// <summary>Lightweight profile projection for the list endpoint (no action detail).</summary>
+public sealed record ProfileSummary(string Id, string Name, string? Icon, int ActionCount, bool IncludeBase)
+{
+    public static ProfileSummary From(Profile profile) =>
+        new(profile.Id, profile.Name, profile.Icon, profile.Actions.Count, profile.IncludeBase);
+}

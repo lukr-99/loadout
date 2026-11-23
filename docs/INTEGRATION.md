@@ -3,7 +3,7 @@
 > Implemented in Milestone 5. Both transports (protocol URI and CLI), the loopback API path, and
 > the trusted confirmation window exist; see [Implementation](#implementation). Registering the
 > `startupprofiles://` scheme with Windows is the installer's job (a later milestone), so today the
-> protocol form is exercised by passing the URI to `StartupProfiles.exe` directly.
+> protocol form is exercised by passing the URI to `Loadout.exe` directly.
 
 Startup Profiles exposes a small **public integration contract** so other applications can
 *request* to be added to a startup profile. This is aimed at CodePrint-convention Windows
@@ -45,7 +45,7 @@ startupprofiles://register?appId=...&name=...&target=...&icon=...&args=...&publi
 and/or a small CLI:
 
 ```
-StartupProfiles.exe register --app-id ... --name ... --target ... [--icon ...] [--args ...] \
+Loadout.exe register --app-id ... --name ... --target ... [--icon ...] [--args ...] \
                              [--publisher ...] [--suggested-profile Dev] [--supports-minimized]
 ```
 
@@ -92,21 +92,21 @@ When designing a CodePrint Windows application, consider Startup Profiles integr
 
 The contract is realised in two layers:
 
-- **`StartupProfiles.Core/Integration`** (portable): `RegistrationRequest` is the metadata an app
+- **`Loadout.Core/Integration`** (portable): `RegistrationRequest` is the metadata an app
   supplies; `RegistrationTargets` is where the user chose to put it (profiles, the base, or neither);
   `RegistrationRequestParser` parses both transports through one shared field mapping and validation;
   `ProfileRegistrar` applies an approved request by keeping the app in the global library and appending
   an action linked to that item to each chosen destination (idempotent per target, never creating
   profiles or touching unlisted ones). A profile that includes the base is skipped when the base
   already starts the app, so it is never launched twice.
-- **`StartupProfiles.App/Integration`** (host): the entry points and the trusted window.
+- **`Loadout.App/Integration`** (host): the entry points and the trusted window.
 
 Three ways to reach it:
 
-1. **Protocol** - `StartupProfiles.exe "startupprofiles://register?appId=...&name=...&target=..."`.
+1. **Protocol** - `Loadout.exe "startupprofiles://register?appId=...&name=...&target=..."`.
    Registering the scheme with Windows is deferred to the installer; until then, invoke the exe with
    the URI directly.
-2. **CLI** - `StartupProfiles.exe register --app-id ... --name ... --target ... [--args ...]
+2. **CLI** - `Loadout.exe register --app-id ... --name ... --target ... [--args ...]
    [--publisher ...] [--suggested-profile Dev] [--supports-minimized]`. A value that itself starts
    with `--` (launch arguments) can use the `--args=--flag` form.
 3. **Loopback API** - `POST /api/register` for local agents (see [API.md](API.md)).

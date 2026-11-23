@@ -66,10 +66,10 @@ icon, and a loopback API. Profiles persist as JSON under `%APPDATA%`, and a Clau
 bundled.
 
 ```
-StartupProfiles.slnx
-  src/StartupProfiles.Core     (net10.0)          profiles, actions, execution engine, storage
-  src/StartupProfiles.Windows  (net10.0-windows)  Windows adapters (startup, service, VPN)
-  src/StartupProfiles.App      (net10.0-windows)  WPF launcher + config UI, tray, loopback API
+Loadout.slnx
+  src/Loadout.Core     (net10.0)          profiles, actions, execution engine, storage
+  src/Loadout.Windows  (net10.0-windows)  Windows adapters (startup, service, VPN)
+  src/Loadout.App      (net10.0-windows)  WPF launcher + config UI, tray, loopback API
 ```
 
 | Layer | Responsibility |
@@ -90,7 +90,7 @@ Full write-up: [ARCHITECTURE.md](ARCHITECTURE.md).
 Other applications can *ask* to be added to a profile - they never add themselves. The
 requesting app supplies metadata (id, name, launch target, icon, suggested profile); Startup
 Profiles owns the confirmation UI and all configuration authority. Transport is a Windows
-custom protocol (`startupprofiles://register?...`) and/or a CLI (`StartupProfiles.exe register ...`).
+custom protocol (`startupprofiles://register?...`) and/or a CLI (`Loadout.exe register ...`).
 
 For CodePrint-generated Windows apps this shows up as an optional
 **Settings -> Startup -> Add to Startup Profiles** action, and the app must work normally
@@ -114,9 +114,9 @@ Build and run from source:
 ```powershell
 git clone https://github.com/lukr-99/startup-profiles.git
 cd startup-profiles
-dotnet build StartupProfiles.slnx
-dotnet test StartupProfiles.slnx
-dotnet run --project src/StartupProfiles.App
+dotnet build Loadout.slnx
+dotnet test Loadout.slnx
+dotnet run --project src/Loadout.App
 ```
 
 Or install it for the current user (no elevation) with the installer from the
@@ -140,7 +140,7 @@ Install also **takes over Windows startup**: every startup app that is currently
 key, your Startup folder, and packaged Store-app startup tasks) is added to the **Everything** profile
 and switched off in Windows - the same reversible switch Task Manager uses - so Startup Profiles is the
 one app that starts at login. All-users entries need admin, so they are left on. To see what it would
-pick up, run `StartupProfiles.exe --list-startup`.
+pick up, run `Loadout.exe --list-startup`.
 
 Useful switches: `-FrameworkDependent` (smaller build, needs the .NET 10 Desktop Runtime),
 `-KeepStartupApps` (leave existing startup apps alone), `-NoStartup` (don't run at login; implies

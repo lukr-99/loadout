@@ -15,9 +15,9 @@ Profiles-owned confirmation window.
 ## Build, test, run
 
 ```powershell
-dotnet build StartupProfiles.slnx -c Release
-dotnet test StartupProfiles.slnx -c Release
-dotnet format StartupProfiles.slnx --verify-no-changes
+dotnet build Loadout.slnx -c Release
+dotnet test Loadout.slnx -c Release
+dotnet format Loadout.slnx --verify-no-changes
 ```
 
 - Build is clean (0 warnings, warnings-as-errors on) and 191 tests pass.
@@ -27,7 +27,7 @@ dotnet format StartupProfiles.slnx --verify-no-changes
   (`%LOCALAPPDATA%\Packages\<pfn>\LocalCache\...`), so the install silently lands in the wrong place and
   that process sees a different data folder than the real app. Launching through `explorer.exe` breaks out
   of the package context; the app's loopback API is unaffected and safe to use from anywhere.
-- Run the app: `dotnet run --project src/StartupProfiles.App` (add `--headless` for the API only,
+- Run the app: `dotnet run --project src/Loadout.App` (add `--headless` for the API only,
   `--port N` to override the port, default 8790).
 - Data lives in `%APPDATA%\StartupProfiles` (`profiles.json`, `config.json`, `history.json`,
   `endpoint.json`, `startup-takeover.json`, `startup-seen.json`, `base.json`, `library.json`). Nothing leaves the machine.
@@ -36,9 +36,9 @@ dotnet format StartupProfiles.slnx --verify-no-changes
 
 | Project | TFM | Contents |
 | --- | --- | --- |
-| `StartupProfiles.Core` | net10.0 | Models, action handlers + registry, `ProfileRunner`/`ProfileExecutor`, JSON stores, `ConfirmationService`, and the Windows seam interfaces. Portable and unit-tested. |
-| `StartupProfiles.Windows` | net10.0-windows | Windows adapters: startup registration (HKCU Run key), service control, VPN (`rasdial`), and the action-registry composition root. |
-| `StartupProfiles.App` | net10.0-windows | WPF launcher + config UI, the tray (DotNetLib.Tray), the updater, and the loopback ASP.NET Core API + `endpoint.json`. |
+| `Loadout.Core` | net10.0 | Models, action handlers + registry, `ProfileRunner`/`ProfileExecutor`, JSON stores, `ConfirmationService`, and the Windows seam interfaces. Portable and unit-tested. |
+| `Loadout.Windows` | net10.0-windows | Windows adapters: startup registration (HKCU Run key), service control, VPN (`rasdial`), and the action-registry composition root. |
+| `Loadout.App` | net10.0-windows | WPF launcher + config UI, the tray (DotNetLib.Tray), the updater, and the loopback ASP.NET Core API + `endpoint.json`. |
 | `tests/*` | net10.0(-windows) | xUnit: Core behavior, the Windows registry round-trip, HTTP API, and WPF view models. |
 
 Key design points:
@@ -93,7 +93,7 @@ by default, `-FrameworkDependent` for the smaller build), installs to
 `%LOCALAPPDATA%\Programs\StartupProfiles`, adds a Start Menu shortcut, registers the launcher at login,
 registers the `startupprofiles://` protocol, and installs the agent skill to `~/.claude/skills`.
 Login/protocol registration is done by invoking the app's own maintenance commands
-(`StartupProfiles.exe --register-login` / `--register-protocol`), which run the
+(`Loadout.exe --register-login` / `--register-protocol`), which run the
 `IStartupRegistration` / `IProtocolRegistration` Windows adapters. `install/uninstall.ps1` reverses it
 all (registry keys removed directly so it works even if the exe is gone; `-PurgeData` also deletes
 `%APPDATA%\StartupProfiles`). Switches: `-Port`, `-FrameworkDependent`, `-NoStartup`,

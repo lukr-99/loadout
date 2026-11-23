@@ -13,7 +13,7 @@
     off in Windows (reversibly, exactly like Task Manager), so Startup Profiles is the one app that starts
     at login. All-users entries (which need admin) are left on. uninstall.ps1 switches them back on.
 
-    Login, protocol, and startup changes are performed by the app itself (StartupProfiles.exe
+    Login, protocol, and startup changes are performed by the app itself (Loadout.exe
     --register-login / --register-protocol / --take-over-startup) so the registry formats stay owned by
     the app's seams.
 
@@ -54,9 +54,9 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $RepoRoot   = Split-Path -Parent $PSScriptRoot
-$AppProject = Join-Path $RepoRoot 'src\StartupProfiles.App\StartupProfiles.App.csproj'
+$AppProject = Join-Path $RepoRoot 'src\Loadout.App\Loadout.App.csproj'
 $InstallDir = Join-Path $env:LOCALAPPDATA 'Programs\StartupProfiles'
-$ExePath    = Join-Path $InstallDir 'StartupProfiles.exe'
+$ExePath    = Join-Path $InstallDir 'Loadout.exe'
 
 function Write-Step($message) { Write-Host "==> $message" -ForegroundColor Cyan }
 

@@ -30,7 +30,7 @@ Two follow-on questions:
 
 - The repository stays self-contained and restores/builds without an external feed.
 - The local MVVM types are a deliberate, documented duplicate. When a shared feed exists, swapping
-  `StartupProfiles.App.Mvvm` for `DotNetLib.Core.Mvvm` is a namespace change; the theme tokens can move
+  `Loadout.App.Mvvm` for `DotNetLib.Core.Mvvm` is a namespace change; the theme tokens can move
   to a shared dictionary at the same time.
 - The dev box resolves runtime `10.0.9` for the WPF markup-compile helper but only has `10.0.7`
   installed, so the App project pins `RuntimeFrameworkVersion` to `10.0.7` (roll-forward still runs it

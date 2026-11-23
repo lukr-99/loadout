@@ -28,7 +28,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $installerRoot = [System.IO.Path]::GetFullPath($PSScriptRoot)
 $repositoryRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$project = Join-Path $repositoryRoot 'src\StartupProfiles.App\StartupProfiles.App.csproj'
+$project = Join-Path $repositoryRoot 'src\Loadout.App\Loadout.App.csproj'
 
 if (-not $Version) {
     [xml]$props = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'Directory.Build.props')
@@ -56,7 +56,7 @@ $dist = Join-Path $installerRoot 'dist'
 
 if ($PublishDir) {
     $publish = [System.IO.Path]::GetFullPath($PublishDir)
-    if (-not (Test-Path -LiteralPath (Join-Path $publish 'StartupProfiles.exe'))) { throw "No StartupProfiles.exe in $publish" }
+    if (-not (Test-Path -LiteralPath (Join-Path $publish 'Loadout.exe'))) { throw "No Loadout.exe in $publish" }
 } else {
     $publish = Join-Path $installerRoot 'publish'
     if (Test-Path -LiteralPath $publish) { Remove-Item -LiteralPath $publish -Recurse -Force }
@@ -69,7 +69,7 @@ if ($PublishDir) {
 }
 
 & $IsccPath "/DMyAppVersion=$Version" "/DMyVersionInfoVersion=$versionInfoVersion" `
-    "/DPublishDir=$publish" (Join-Path $installerRoot 'StartupProfiles.iss')
+    "/DPublishDir=$publish" (Join-Path $installerRoot 'Loadout.iss')
 if ($LASTEXITCODE -ne 0) { throw 'Inno Setup compilation failed.' }
 
 # The setup holds the files now. Drop a publish folder this script made: CodePrint's validator scans it.

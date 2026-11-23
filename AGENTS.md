@@ -14,8 +14,8 @@ Repository-specific guidance for coding agents working on Windows Startup Profil
 ## Baseline
 
 - One top-level type per file, named for the type.
-- `StartupProfiles.Core` (net10.0) stays portable: no UI, ASP.NET, or platform APIs. Platform code
-  lives in `StartupProfiles.Windows` behind Core seams (`IProcessLauncher`, `IStartupRegistration`,
+- `Loadout.Core` (net10.0) stays portable: no UI, ASP.NET, or platform APIs. Platform code
+  lives in `Loadout.Windows` behind Core seams (`IProcessLauncher`, `IStartupRegistration`,
   `IServiceController`, `IVpnConnector`).
 - Constructor injection; one explicit composition root per host. `WindowsRuntime` composes the
   Windows action registry today; the App host will own the full graph.
@@ -49,7 +49,7 @@ CodePrint when CodePrint changes it.
 
 ```powershell
 python tools/validate_repository.py --root .
-dotnet format StartupProfiles.slnx --verify-no-changes
-dotnet build StartupProfiles.slnx -c Release
-dotnet test StartupProfiles.slnx -c Release
+dotnet format Loadout.slnx --verify-no-changes
+dotnet build Loadout.slnx -c Release
+dotnet test Loadout.slnx -c Release
 ```

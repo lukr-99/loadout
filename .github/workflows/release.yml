@@ -44,11 +44,11 @@ jobs:
           "version=$tagVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: Test
-        run: dotnet test StartupProfiles.slnx -c Release
+        run: dotnet test Loadout.slnx -c Release
 
       - name: Publish (self-contained win-x64)
         run: >
-          dotnet publish src/StartupProfiles.App/StartupProfiles.App.csproj
+          dotnet publish src/Loadout.App/Loadout.App.csproj
           -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false
           -p:Version=${{ steps.ver.outputs.version }}
           -o publish
@@ -64,7 +64,7 @@ jobs:
           WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
         run: >-
           ./tools/sign-windows-artifacts.ps1
-          -Path 'publish/StartupProfiles*.exe'
+          -Path 'publish/Loadout*.exe'
           -Description 'Startup Profiles'
           -DescriptionUrl 'https://github.com/lukr-99/startup-profiles'
 
@@ -112,7 +112,7 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          $files = @(Get-ChildItem -Path 'publish/StartupProfiles*.exe', 'installer/dist/*.exe' -ErrorAction SilentlyContinue)
+          $files = @(Get-ChildItem -Path 'publish/Loadout*.exe', 'installer/dist/*.exe' -ErrorAction SilentlyContinue)
           foreach ($file in $files) {
             $status = (Get-AuthenticodeSignature -LiteralPath $file.FullName).Status
             "- $($file.Name): $status" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append

@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- WPF for every window; the tray icon comes from DotNetLib.Tray (H.NotifyIcon), so no WinForms. -->
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Loadout</AssemblyName>
+    <RootNamespace>Loadout.App</RootNamespace>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <!-- Pin to the installed shared runtime; the SDK otherwise resolves 10.0.9 for the WPF
+         markup-compile helper, which is not installed here. Roll-forward still runs it on newer patches. -->
+    <RuntimeFrameworkVersion>10.0.7</RuntimeFrameworkVersion>
+    <Product>Windows Startup Profiles</Product>
+    <!-- Self-contained single-file publish defaults (overridable on the CLI) -->
+    <RuntimeIdentifier Condition="'$(PublishSingleFile)' == 'true'">win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <!-- Shared .NET building blocks (CodePrint standard): MVVM and self-update from Core, the tray kit and theme
+       engine from Tray. Restored from the GitHub Packages feed in nuget.config. -->
+  <ItemGroup>
+    <PackageReference Include="DotNetLib.Core" Version="0.4.1" />
+    <PackageReference Include="DotNetLib.Tray" Version="0.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Also embedded as a WPF resource so windows can set Icon via a pack URI. -->
+    <Resource Include="Assets\app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Loadout.Core\Loadout.Core.csproj" />
+    <ProjectReference Include="..\Loadout.Windows\Loadout.Windows.csproj" />
+  </ItemGroup>
+
+</Project>
