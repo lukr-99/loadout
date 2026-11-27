@@ -1,0 +1,46 @@
+# Local (Kiln) version of .github/workflows/ci.yml (the Loadout app). Run it with:
+#   kiln run .kiln/workflows/ci.yml --repo .
+# GitHub runs this on windows-latest with a private NuGet feed token. Kiln has no such secret set, so
+# this file runs what does not need the private "dotnetlib" feed, on Linux with EnableWindowsTargeting:
+# restore, format check and build of Loadout.Core, Loadout.Windows and their test projects, and the
+# Core tests (plain net10.0).
+# Left out, still run by GitHub Actions:
+# - Loadout.App and Loadout.App.Tests (need DotNetLib packages from the private feed, and WPF);
+# - Loadout.Windows.Tests (net10.0-windows, needs Windows APIs and the WindowsDesktop runtime).
+name: CI
+
+on:
+  workflow_dispatch:
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  EnableWindowsTargeting: "true"
+
+jobs:
+  dotnet:
+    name: Format, build and Core tests (Linux)
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/dotnet/sdk:10.0
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Restore
+        run: |
+          dotnet restore tests/Loadout.Core.Tests/Loadout.Core.Tests.csproj
+          dotnet restore tests/Loadout.Windows.Tests/Loadout.Windows.Tests.csproj
+
+      - name: Check formatting
+        run: |
+          for p in src/Loadout.Core/Loadout.Core.csproj src/Loadout.Windows/Loadout.Windows.csproj tests/Loadout.Core.Tests/Loadout.Core.Tests.csproj tests/Loadout.Windows.Tests/Loadout.Windows.Tests.csproj; do
+            dotnet format "$p" --verify-no-changes --no-restore
+          done
+
+      - name: Build
+        run: |
+          dotnet build tests/Loadout.Core.Tests/Loadout.Core.Tests.csproj -c Release --no-restore
+          dotnet build tests/Loadout.Windows.Tests/Loadout.Windows.Tests.csproj -c Release --no-restore
+
+      - name: Test (Core)
+        run: dotnet test tests/Loadout.Core.Tests/Loadout.Core.Tests.csproj -c Release --no-build
